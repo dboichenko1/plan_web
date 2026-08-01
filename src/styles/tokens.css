@@ -1,0 +1,174 @@
+@import 'tailwindcss';
+
+/*
+ * Токены тем. Значения — из дизайн-брифа (HANDOFF.md приватного репозитория)
+ * с точечными правками под жёсткие правила проверки тем (ТЗ §5.11):
+ * каждая правка перечислена в docs/design/theme-deviations.md приватного репозитория.
+ * Реестр в src/domain/themes/ — источник истины; блоки ниже сверяются с ним тестом.
+ */
+
+/* generated:themes:start */
+:root,
+:root[data-theme='graphite'] {
+  color-scheme: dark;
+  --bg: #0f1114;
+  --surface: #191c21;
+  --surface2: #22262c;
+  --line: #2c3138;
+  --text: #eceff3;
+  --text-muted: #8e97a3;
+  --text-quiet: #5c646e;
+  --u1: #47576f;
+  --u2: #3fa97a;
+  --u3: #e8952e;
+  --u4: #dc3435;
+  --on-u1: #dce3ec;
+  --on-u2: #0f1114;
+  --on-u3: #0f1114;
+  --on-u4: #ffffff;
+  --slipped-fill: #2e3238;
+  --slipped-text: #a6aeb8;
+  --expired-outline: #dc3435;
+  --done-fill: #1e2228;
+  --done-text: #808b94;
+  --accent: #5b7fa8;
+  --accent-alt: #dc3435;
+  --scrim: rgba(4, 5, 7, 0.62);
+}
+
+:root[data-theme='paper'] {
+  color-scheme: light;
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --surface2: #e8eaee;
+  --line: #d5d9df;
+  --text: #14171c;
+  --text-muted: #5c646e;
+  --text-quiet: #8e97a3;
+  --u1: #5a6b84;
+  --u2: #339066;
+  --u3: #c97a15;
+  --u4: #d02b2b;
+  --on-u1: #ffffff;
+  --on-u2: #14171c;
+  --on-u3: #14171c;
+  --on-u4: #ffffff;
+  --slipped-fill: #e4e6ea;
+  --slipped-text: #5c646e;
+  --expired-outline: #d02b2b;
+  --done-fill: #e9ecf3;
+  --done-text: #61676f;
+  --accent: #3a6ea5;
+  --accent-alt: #d02b2b;
+  --scrim: rgba(20, 23, 28, 0.42);
+}
+
+:root[data-theme='dracula'] {
+  color-scheme: dark;
+  --bg: #282a36;
+  --surface: #21222c;
+  --surface2: #44475a;
+  --line: #383a4a;
+  --text: #f8f8f2;
+  --text-muted: #9aa4c8;
+  --text-quiet: #6272a4;
+  --u1: #6070a1;
+  --u2: #3fd968;
+  --u3: #ffb86c;
+  --u4: #ff5555;
+  --on-u1: #f8f8f2;
+  --on-u2: #282a36;
+  --on-u3: #282a36;
+  --on-u4: #282a36;
+  --slipped-fill: #44475a;
+  --slipped-text: #c5cbe0;
+  --expired-outline: #ff5555;
+  --done-fill: #343746;
+  --done-text: #8ea0d5;
+  --accent: #bd93f9;
+  --accent-alt: #ff79c6;
+  --scrim: rgba(14, 15, 22, 0.62);
+}
+
+:root[data-theme='mocha'] {
+  color-scheme: dark;
+  --bg: #1e1e2e;
+  --surface: #181825;
+  --surface2: #313244;
+  --line: #45475a;
+  --text: #cdd6f4;
+  --text-muted: #a6adc8;
+  --text-quiet: #7f849c;
+  --u1: #7f849c;
+  --u2: #a6e3a1;
+  --u3: #fab387;
+  --u4: #f38ba8;
+  --on-u1: #11111b;
+  --on-u2: #11111b;
+  --on-u3: #11111b;
+  --on-u4: #11111b;
+  --slipped-fill: #585b70;
+  --slipped-text: #cdd6f4;
+  --expired-outline: #f38ba8;
+  --done-fill: #313244;
+  --done-text: #969bb4;
+  --accent: #cba6f7;
+  --accent-alt: #f5c2e7;
+  --scrim: rgba(10, 10, 18, 0.62);
+}
+/* generated:themes:end */
+
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-quiet: var(--text-quiet);
+  --color-u1: var(--u1);
+  --color-u2: var(--u2);
+  --color-u3: var(--u3);
+  --color-u4: var(--u4);
+  --color-on-u1: var(--on-u1);
+  --color-on-u2: var(--on-u2);
+  --color-on-u3: var(--on-u3);
+  --color-on-u4: var(--on-u4);
+  --color-slipped-fill: var(--slipped-fill);
+  --color-slipped-text: var(--slipped-text);
+  --color-expired-outline: var(--expired-outline);
+  --color-done-fill: var(--done-fill);
+  --color-done-text: var(--done-text);
+  --color-accent: var(--accent);
+  --color-accent-alt: var(--accent-alt);
+
+  --font-tile: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-*: initial;
+  --radius-tile: 2px;
+
+  --text-*: initial;
+  --text-32: 32px;
+  --text-24: 24px;
+  --text-18: 18px;
+  --text-15: 15px;
+  --text-13: 13px;
+  --text-11: 11px;
+}
+
+html,
+body {
+  height: 100dvh;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}

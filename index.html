@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Планировщик</title>
+    <meta name="theme-color" content="#0F1114" />
+    <script>
+      // Анти-мигание: тема ставится до первой отрисовки.
+      // Единственное место в приложении, где localStorage уместен (ТЗ §5.11).
+      ;(function () {
+        var bg = { graphite: '#0F1114', paper: '#F2F3F5', dracula: '#282A36', mocha: '#1E1E2E' }
+        var mode = localStorage.getItem('theme_mode') || 'system'
+        var dark = localStorage.getItem('theme_dark_id') || 'graphite'
+        var light = localStorage.getItem('theme_light_id') || 'paper'
+        var isDark =
+          mode === 'dark' ||
+          (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var id = isDark ? dark : light
+        if (!bg[id]) id = isDark ? 'graphite' : 'paper'
+        document.documentElement.dataset.theme = id
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', bg[id])
+      })()
+    </script>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -194,6 +194,15 @@
   --text-11: 11px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 html,
 body {
   height: 100dvh;

@@ -34,6 +34,13 @@
   --accent: #5b7fa8;
   --accent-alt: #dc3435;
   --scrim: rgba(4, 5, 7, 0.62);
+  --cat-1: #7f77dd;
+  --cat-2: #1d9e75;
+  --cat-3: #d85a30;
+  --cat-4: #378add;
+  --cat-5: #d4537e;
+  --cat-6: #888780;
+  --cat-7: #ba7517;
 }
 
 :root[data-theme='paper'] {
@@ -61,6 +68,13 @@
   --accent: #3a6ea5;
   --accent-alt: #d02b2b;
   --scrim: rgba(20, 23, 28, 0.42);
+  --cat-1: #7f77dd;
+  --cat-2: #1d9e75;
+  --cat-3: #d85a30;
+  --cat-4: #378add;
+  --cat-5: #d4537e;
+  --cat-6: #888780;
+  --cat-7: #ba7517;
 }
 
 :root[data-theme='dracula'] {
@@ -88,6 +102,13 @@
   --accent: #bd93f9;
   --accent-alt: #ff79c6;
   --scrim: rgba(14, 15, 22, 0.62);
+  --cat-1: #7f77dd;
+  --cat-2: #1d9e75;
+  --cat-3: #d85a30;
+  --cat-4: #378add;
+  --cat-5: #d4537e;
+  --cat-6: #888780;
+  --cat-7: #ba7517;
 }
 
 :root[data-theme='mocha'] {
@@ -115,6 +136,13 @@
   --accent: #cba6f7;
   --accent-alt: #f5c2e7;
   --scrim: rgba(10, 10, 18, 0.62);
+  --cat-1: #7f77dd;
+  --cat-2: #1d9e75;
+  --cat-3: #d85a30;
+  --cat-4: #378add;
+  --cat-5: #d4537e;
+  --cat-6: #888780;
+  --cat-7: #ba7517;
 }
 /* generated:themes:end */
 
@@ -142,6 +170,13 @@
   --color-done-text: var(--done-text);
   --color-accent: var(--accent);
   --color-accent-alt: var(--accent-alt);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+  --color-cat-6: var(--cat-6);
+  --color-cat-7: var(--cat-7);
 
   --font-tile: 'Oswald', 'Arial Narrow', sans-serif;
   --font-ui: 'Inter', system-ui, sans-serif;

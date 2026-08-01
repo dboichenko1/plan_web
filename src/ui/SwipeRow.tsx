@@ -13,6 +13,7 @@ export function SwipeRow({
   onSwipeRight,
   onSwipeLeft,
   onTap,
+  disabled = false,
 }: {
   children: ReactNode
   /** Подложка слева, открывается свайпом вправо. */
@@ -22,12 +23,15 @@ export function SwipeRow({
   onSwipeRight: () => void
   onSwipeLeft: () => void
   onTap?: () => void
+  /** Пока идёт перетаскивание, свайп молчит. */
+  disabled?: boolean
 }) {
   const [dx, setDx] = useState(0)
   const [animating, setAnimating] = useState(false)
   const start = useRef<{ x: number; y: number; captured: boolean; id: number } | null>(null)
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (disabled) return
     start.current = { x: e.clientX, y: e.clientY, captured: false, id: e.pointerId }
     setAnimating(false)
   }
@@ -35,6 +39,11 @@ export function SwipeRow({
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const s = start.current
     if (!s) return
+    if (disabled) {
+      start.current = null
+      setDx(0)
+      return
+    }
     const ddx = e.clientX - s.x
     const ddy = e.clientY - s.y
     if (!s.captured) {

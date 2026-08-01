@@ -9,6 +9,7 @@ import { moveTaskToDay, softDeleteTask } from '../data/repo'
 import { naturalCompare } from '../domain/ordering'
 import { effectiveUrgency } from '../domain/urgency'
 import type { DateStr } from '../domain/types'
+import { useDraggable } from '@dnd-kit/core'
 import { CategoryIcon, IconSearch } from '../ui/icons'
 import { SwipeRow } from '../ui/SwipeRow'
 import { plural, tileCaption } from '../ui/format'
@@ -17,10 +18,15 @@ export function InboxScreen({
   userId,
   today,
   onOpenTask,
+  compact = false,
+  draggingId = null,
 }: {
   userId: string
   today: DateStr
   onOpenTask: (id: string) => void
+  /** Треть экрана при перетаскивании (макет 05): без поиска и подсказок. */
+  compact?: boolean
+  draggingId?: string | null
 }) {
   const [query, setQuery] = useState('')
   const tasks = useLive(
@@ -58,6 +64,7 @@ export function InboxScreen({
             {total} {plural(total, 'задача', 'задачи', 'задач')} без даты
           </span>
         </div>
+        {!compact && (
         <label className="mt-2.5 flex h-10 items-center gap-2.5 rounded-tile border border-line bg-surface px-3">
           <span className="text-text-quiet">
             <IconSearch size={15} />
@@ -69,6 +76,7 @@ export function InboxScreen({
             className="w-full bg-transparent text-13 text-text outline-none placeholder:text-text-quiet"
           />
         </label>
+        )}
       </div>
 
       <div className="mt-2.5 min-h-0 flex-1 overflow-y-auto px-3 pb-4">
@@ -80,6 +88,7 @@ export function InboxScreen({
               today={today}
               catMap={catMap}
               onOpen={() => onOpenTask(t.id)}
+              draggingId={draggingId}
             />
           ))}
         </div>
@@ -93,7 +102,7 @@ export function InboxScreen({
             </p>
           </div>
         )}
-        {list.length > 0 && (
+        {list.length > 0 && !compact && (
           <p className="mt-2.5 font-mono text-[10px] text-text-quiet">
             свайп вправо — на сегодня · влево — удалить · долгое нажатие — перетащить
           </p>
@@ -108,17 +117,24 @@ export function InboxRow({
   today,
   catMap,
   onOpen,
+  draggingId = null,
 }: {
   task: TaskRow
   today: DateStr
   catMap: ReadonlyMap<string, CategoryRow>
   onOpen: () => void
+  draggingId?: string | null
 }) {
   const u = effectiveUrgency(task, today)
   const category = task.category_id ? catMap.get(task.category_id) : undefined
   const caption =
     tileCaption(task.due_on, task.due_time, category?.name ?? null, today) ||
     `без срока${category ? ` · ${category.name.toLowerCase()}` : ''}`
+
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
+    id: `drag:inbox:${task.id}`,
+    data: { type: 'inbox-row', task },
+  })
 
   return (
     <SwipeRow
@@ -127,10 +143,19 @@ export function InboxRow({
       onSwipeRight={() => void moveTaskToDay(task.id, today, today)}
       onSwipeLeft={() => void softDeleteTask(task.id)}
       onTap={onOpen}
+      disabled={draggingId !== null}
     >
       <div
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
         className="flex h-14 items-center justify-between rounded-tile px-3"
-        style={{ background: `var(--u${u})`, color: `var(--on-u${u})` }}
+        style={{
+          background: `var(--u${u})`,
+          color: `var(--on-u${u})`,
+          touchAction: 'none',
+          opacity: isDragging ? 0.35 : 1,
+        }}
       >
         <span className="flex min-w-0 items-center gap-2.5">
           {category && (

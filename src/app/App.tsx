@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeProvider } from './theme'
 import { currentUserId, demoMode, useSession } from './session'
 import { useToday } from './useToday'
 import { LoginScreen } from '../screens/LoginScreen'
 import { DayScreen, useSelectedDay } from '../screens/DayScreen'
-import { InboxScreen } from '../screens/InboxScreen'
 import { TaskCardSheet } from '../screens/TaskCardSheet'
 import { CreateTaskSheet } from '../screens/CreateTaskSheet'
 import { TabBar, type Tab } from '../ui/TabBar'
@@ -47,7 +46,7 @@ function Shell({ userId }: { userId: string }) {
     seedDemo(todayIn('Europe/Warsaw')).then(() => setSeeded(true))
   }, [])
 
-  const content = useMemo(() => {
+  const content = (() => {
     if (!seeded) return null
     switch (tab) {
       case 'day':
@@ -58,7 +57,9 @@ function Shell({ userId }: { userId: string }) {
             day={day}
             onDayChange={setDay}
             onOpenTask={setOpenTaskId}
-            onOpenInbox={() => setInboxOpen(true)}
+            inboxOpen={inboxOpen}
+            onCloseInbox={() => setInboxOpen(false)}
+            onToggleInbox={() => setInboxOpen((v) => !v)}
             hangingOpen={hangingOpen}
             onToggleHanging={() => setHangingOpen((v) => !v)}
           />
@@ -66,18 +67,11 @@ function Shell({ userId }: { userId: string }) {
       default:
         return <Placeholder tab={tab} />
     }
-  }, [seeded, tab, userId, today, day, hangingOpen, setDay])
+  })()
 
   return (
     <div className="flex h-dvh flex-col bg-bg">
-      <main className="relative min-h-0 flex-1">
-        {content}
-        {inboxOpen && seeded && (
-          <div className="absolute inset-0 bg-bg">
-            <InboxScreen userId={userId} today={today} onOpenTask={setOpenTaskId} />
-          </div>
-        )}
-      </main>
+      <main className="relative min-h-0 flex-1">{content}</main>
       <TabBar
         active={tab}
         onSelect={(t) => {

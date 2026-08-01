@@ -175,6 +175,28 @@ export function stateOf(task: TaskRow, today: DateStr) {
   return taskState(task, today)
 }
 
+export async function createTag(userId: string, name: string): Promise<string> {
+  const existing = await db.tags
+    .filter((t) => t.user_id === userId && t.name.toLowerCase() === name.toLowerCase())
+    .first()
+  if (existing) return existing.id
+  const id = crypto.randomUUID()
+  await db.tags.put({ id, user_id: userId, name, updated_at: nowIso() })
+  await enqueue('tags', id, { id, user_id: userId, name })
+  return id
+}
+
+// Ключ outbox для task_tags — 'task_id:tag_id': того же ждёт правило конфликтов в sync.ts.
+export async function linkTaskTag(taskId: string, tagId: string, userId: string): Promise<void> {
+  await db.task_tags.put({ task_id: taskId, tag_id: tagId, user_id: userId })
+  await enqueue('task_tags', `${taskId}:${tagId}`, { task_id: taskId, tag_id: tagId, user_id: userId })
+}
+
+export async function unlinkTaskTag(taskId: string, tagId: string, userId: string): Promise<void> {
+  await db.task_tags.delete([taskId, tagId])
+  await enqueue('task_tags', `${taskId}:${tagId}`, { task_id: taskId, tag_id: tagId, user_id: userId }, 'delete')
+}
+
 /**
  * Перетаскивание задаёт позицию в списке, а не координаты ячейки (ТЗ §5.7).
  * index — куда встать среди открытых задач дня (без самой задачи).

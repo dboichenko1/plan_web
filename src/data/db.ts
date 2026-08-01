@@ -5,6 +5,7 @@ import Dexie, { type Table } from 'dexie'
 import type {
   CategoryRow,
   ProfileRow,
+  PushSubscriptionRow,
   TagRow,
   TaskRow,
   TaskTagRow,
@@ -18,6 +19,7 @@ export type OutboxEntity =
   | 'task_templates'
   | 'tasks'
   | 'task_tags'
+  | 'push_subscriptions'
 
 export type OutboxRow = {
   id?: number
@@ -39,6 +41,7 @@ export class PlannerDb extends Dexie {
   task_templates!: Table<TaskTemplateRow, string>
   tasks!: Table<TaskRow, string>
   task_tags!: Table<TaskTagRow, [string, string]>
+  push_subscriptions!: Table<PushSubscriptionRow, string>
   outbox!: Table<OutboxRow, number>
   meta!: Table<MetaRow, string>
 
@@ -53,6 +56,11 @@ export class PlannerDb extends Dexie {
       task_tags: '[task_id+tag_id], task_id, tag_id',
       outbox: '++id, created_at',
       meta: 'key',
+    })
+    // Подписки на пуши (фаза 9): endpoint индексируется, чтобы повторная
+    // подписка того же устройства не плодила строк.
+    this.version(2).stores({
+      push_subscriptions: 'id, endpoint',
     })
   }
 }

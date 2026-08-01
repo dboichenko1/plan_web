@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react'
 import { ThemeProvider } from './theme'
 import { currentUserId, demoMode, useSession } from './session'
-import { useToday } from './useToday'
+import { useToday, todayIn } from './useToday'
 import { LoginScreen } from '../screens/LoginScreen'
 import { DayScreen, useSelectedDay } from '../screens/DayScreen'
+import { WeekScreen } from '../screens/WeekScreen'
+import { MonthScreen } from '../screens/MonthScreen'
+import { PeriodScreen } from '../screens/PeriodScreen'
 import { TaskCardSheet } from '../screens/TaskCardSheet'
 import { CreateTaskSheet } from '../screens/CreateTaskSheet'
 import { TabBar, type Tab } from '../ui/TabBar'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
 import { seedDemo } from '../data/demoSeed'
-import { todayIn } from './useToday'
+import { startSync } from '../data/sync'
+import { registerSW } from '../data/push'
+import { addDays, isoWeekday } from '../domain/date'
 
 export function App() {
   return (
@@ -28,17 +33,24 @@ function Gate() {
   return <Shell userId={currentUserId(session)} />
 }
 
+function mondayOf(day: string): string {
+  return addDays(day, 1 - isoWeekday(day))
+}
+
 function Shell({ userId }: { userId: string }) {
   const [tab, setTab] = useState<Tab>('day')
   const [createOpen, setCreateOpen] = useState(false)
   const [openTaskId, setOpenTaskId] = useState<string | null>(null)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [hangingOpen, setHangingOpen] = useState(false)
+  const [periodOpen, setPeriodOpen] = useState(false)
 
   const profile = useLive(() => db.profiles.get(userId), [userId])
   const timeZone = profile?.timezone ?? 'Europe/Warsaw'
   const today = useToday(timeZone)
   const [day, setDay] = useSelectedDay(today)
+  const [weekStart, setWeekStart] = useState(() => mondayOf(todayIn('Europe/Warsaw')))
+  const [month, setMonth] = useState(() => todayIn('Europe/Warsaw').slice(0, 7))
 
   const [seeded, setSeeded] = useState(!demoMode)
   useEffect(() => {
@@ -46,8 +58,20 @@ function Shell({ userId }: { userId: string }) {
     seedDemo(todayIn('Europe/Warsaw')).then(() => setSeeded(true))
   }, [])
 
+  useEffect(() => startSync(userId), [userId])
+  useEffect(() => {
+    void registerSW()
+  }, [])
+
+  const openDay = (d: string) => {
+    setDay(d)
+    setPeriodOpen(false)
+    setTab('day')
+  }
+
   const content = (() => {
     if (!seeded) return null
+    if (periodOpen) return <PeriodScreen userId={userId} today={today} onOpenDay={openDay} />
     switch (tab) {
       case 'day':
         return (
@@ -64,7 +88,28 @@ function Shell({ userId }: { userId: string }) {
             onToggleHanging={() => setHangingOpen((v) => !v)}
           />
         )
-      default:
+      case 'week':
+        return (
+          <WeekScreen
+            userId={userId}
+            today={today}
+            weekStart={weekStart}
+            onWeekChange={setWeekStart}
+            onOpenDay={openDay}
+            onOpenPeriod={() => setPeriodOpen(true)}
+          />
+        )
+      case 'month':
+        return (
+          <MonthScreen
+            userId={userId}
+            today={today}
+            month={month}
+            onMonthChange={setMonth}
+            onOpenDay={openDay}
+          />
+        )
+      case 'stats':
         return <Placeholder tab={tab} />
     }
   })()
@@ -76,6 +121,7 @@ function Shell({ userId }: { userId: string }) {
         active={tab}
         onSelect={(t) => {
           setInboxOpen(false)
+          setPeriodOpen(false)
           setTab(t)
         }}
         onAdd={() => setCreateOpen(true)}
@@ -108,4 +154,3 @@ function Placeholder({ tab }: { tab: Tab }) {
     </div>
   )
 }
-

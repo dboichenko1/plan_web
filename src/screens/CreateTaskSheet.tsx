@@ -1,19 +1,22 @@
-// Шторка создания задачи (макет 07) с вложенной шторкой напоминаний (макет 08).
+// Шторка создания задачи (макет 07) с вложенными шторками напоминаний и повтора.
 // Превью собирается из тех же TileData, что и доска: форма честно показывает
 // будущий размер, цвет и подпись плитки.
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
-import { createTask } from '../data/repo'
+import { createTag, createTask, linkTaskTag } from '../data/repo'
+import { createTemplate, describeRule } from '../data/templates'
 import { TILE } from '../domain/packing'
 import { effectiveUrgency } from '../domain/urgency'
 import { addDays } from '../domain/date'
+import type { Rule } from '../domain/recurrence'
 import type { DateStr, Importance, Urgency } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { Tile, type TileData } from '../ui/Tile'
 import { CategoryIcon, IconChevronRight, IconClose, IconPlus } from '../ui/icons'
 import { dateShort, plural, tileCaption, weekdayShort } from '../ui/format'
+import { RepeatSheet } from './RepeatSheet'
 
 const IMPORTANCE_LABEL: Record<Importance, string> = {
   1: 'Мелочь',
@@ -74,7 +77,9 @@ export function CreateTaskSheet({
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [remind, setRemind] = useState<number[]>([])
   const [tagIds, setTagIds] = useState<string[]>([])
+  const [repeat, setRepeat] = useState<Rule | null>(null)
   const [remindOpen, setRemindOpen] = useState(false)
+  const [repeatOpen, setRepeatOpen] = useState(false)
   const [addingTag, setAddingTag] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [saving, setSaving] = useState(false)
@@ -93,7 +98,9 @@ export function CreateTaskSheet({
     setCategoryId(null)
     setRemind([])
     setTagIds([])
+    setRepeat(null)
     setRemindOpen(false)
+    setRepeatOpen(false)
     setAddingTag(false)
     setNewTag('')
     setSaving(false)
@@ -126,7 +133,7 @@ export function CreateTaskSheet({
     caption:
       tileCaption(dueOn || null, dueTime || null, selectedCategory?.name ?? null, today) || null,
     hangingDays: 0,
-    repeating: false,
+    repeating: repeat !== null,
   }
 
   const scheduledCaption =
@@ -149,6 +156,27 @@ export function CreateTaskSheet({
     if (!name || saving) return
     setSaving(true)
     try {
+      if (repeat) {
+        // Повторяющаяся задача — это шаблон: экземпляры создаёт материализация,
+        // отдельную одиночную задачу не заводим. Теги к шаблону не применяются.
+        await createTemplate(
+          {
+            title: name,
+            note: note.trim() ? note.trim() : null,
+            importance,
+            urgency_manual: urgencyManual,
+            due_time: dueTime || null,
+            remind_before: dueTime ? remindSorted : [],
+            category_id: categoryId,
+            // Серия стартует с выбранного дня плана, а не с дня открытия шторки.
+            rule: { ...repeat, starts_on: scheduledOn ?? today },
+          },
+          userId,
+          today,
+        )
+        onClose()
+        return
+      }
       const task = await createTask(
         {
           user_id: userId,
@@ -164,10 +192,8 @@ export function CreateTaskSheet({
         },
         today,
       )
-      if (tagIds.length > 0) {
-        await db.task_tags.bulkPut(
-          tagIds.map((tag_id) => ({ task_id: task.id, tag_id, user_id: userId })),
-        )
+      for (const tagId of tagIds) {
+        await linkTaskTag(task.id, tagId, userId)
       }
       onClose()
     } finally {
@@ -185,10 +211,8 @@ export function CreateTaskSheet({
       setTagIds((prev) => (prev.includes(existing.id) ? prev : [...prev, existing.id]))
       return
     }
-    const id = crypto.randomUUID()
-    // Тег живёт только в Dexie: в outbox сознательно не кладём (синк тегов — позже).
-    await db.tags.put({ id, user_id: userId, name, updated_at: new Date().toISOString() })
-    setTagIds((prev) => [...prev, id])
+    const id = await createTag(userId, name)
+    setTagIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
   }
 
   return (
@@ -370,13 +394,25 @@ export function CreateTaskSheet({
                 )}
               </button>
 
-              <div className="flex h-[42px] items-center justify-between border-b border-line">
+              <button
+                type="button"
+                onClick={() => setRepeatOpen(true)}
+                className="flex h-[42px] w-full items-center justify-between border-b border-line text-left"
+              >
                 <span className="text-15 text-text">Повтор</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-13 text-text-muted">Не повторять</span>
-                  <span className="font-mono text-11 text-text-quiet">появится позже</span>
+                <span className="flex min-w-0 items-center gap-1">
+                  <span
+                    className={
+                      repeat
+                        ? 'max-w-[230px] truncate text-13 text-text'
+                        : 'text-13 text-text-muted'
+                    }
+                  >
+                    {repeat ? describeRule(repeat) : 'Не повторять'}
+                  </span>
+                  <IconChevronRight size={12} className="shrink-0 text-text-quiet" />
                 </span>
-              </div>
+              </button>
             </div>
 
             <Section label="Категория">
@@ -492,6 +528,14 @@ export function CreateTaskSheet({
         dueTime={dueTime}
         value={remind}
         onSave={setRemind}
+      />
+
+      <RepeatSheet
+        open={repeatOpen}
+        onClose={() => setRepeatOpen(false)}
+        value={repeat}
+        onChange={setRepeat}
+        startsOn={scheduledOn ?? today}
       />
     </>
   )

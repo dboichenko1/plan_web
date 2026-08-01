@@ -384,11 +384,13 @@ function BoardTile({
     <div ref={setDropRef} className="h-full w-full">
       <div
         ref={setDragRef}
-        {...listeners}
         {...attributes}
         className="relative h-full w-full overflow-hidden rounded-tile"
         style={{ touchAction: 'none', opacity: isDragging ? 0 : 1 }}
         onPointerDown={(e) => {
+          // Сначала dnd-kit (долгое нажатие), поверх — свайп: быстрый
+          // горизонтальный жест не успевает активировать перетаскивание.
+          ;(listeners?.onPointerDown as ((ev: unknown) => void) | undefined)?.(e)
           if (!canComplete || dragActive) return
           swipe.current = { x: e.clientX, y: e.clientY, captured: false }
         }}

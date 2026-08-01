@@ -6,8 +6,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
-import type { TagRow, TaskRow } from '../data/contract'
+import type { TagRow, TaskRow, TaskTemplateRow } from '../data/contract'
 import { completeTask, moveTaskToDay, reopenTask, softDeleteTask } from '../data/repo'
+import { describeRule, editThisAndFollowing, templateRule } from '../data/templates'
 import { addDays } from '../domain/date'
 import { daysHanging, taskState } from '../domain/state'
 import { effectiveUrgency } from '../domain/urgency'
@@ -45,7 +46,19 @@ function remindLabel(minutes: number): string {
 
 type ParamRow = { label: string; value: string; mono?: boolean }
 
-function paramRows(task: TaskRow, categoryName: string | null, today: DateStr): ParamRow[] {
+/** «повторяется · каждую неделю по вт, пт» — с прочтением правила из шаблона. */
+function repeatValue(template: TaskTemplateRow | undefined): string {
+  if (!template) return 'повторяется'
+  const text = describeRule(templateRule(template))
+  return `повторяется · ${text.charAt(0).toLowerCase()}${text.slice(1)}`
+}
+
+function paramRows(
+  task: TaskRow,
+  categoryName: string | null,
+  repeatText: string | null,
+  today: DateStr,
+): ParamRow[] {
   const rows: ParamRow[] = []
   if (task.due_on) {
     rows.push({ label: 'Срок', value: dueLabel(task.due_on, task.due_time, today), mono: true })
@@ -58,7 +71,7 @@ function paramRows(task: TaskRow, categoryName: string | null, today: DateStr): 
   rows.push({ label: 'Важность', value: IMPORTANCE_LABELS[task.importance] })
   rows.push({ label: 'Срочность', value: URGENCY_LABELS[effectiveUrgency(task, today)] })
   if (categoryName) rows.push({ label: 'Категория', value: categoryName.toLowerCase() })
-  if (task.template_id) rows.push({ label: 'Повтор', value: 'повторяется' })
+  if (repeatText) rows.push({ label: 'Повтор', value: repeatText })
   if (task.remind_before.length > 0) {
     rows.push({ label: 'Напомнить', value: task.remind_before.map(remindLabel).join(', ') })
   }
@@ -80,6 +93,11 @@ export function TaskCardSheet({
     () => (catId ? db.categories.get(catId) : Promise.resolve(undefined)),
     [catId],
   )
+  const templateId = task?.template_id ?? null
+  const template = useLive(
+    () => (templateId ? db.task_templates.get(templateId) : Promise.resolve(undefined)),
+    [templateId],
+  )
   const tags = useLive(async () => {
     const links = await db.task_tags.where('task_id').equals(taskId).toArray()
     if (links.length === 0) return [] as TagRow[]
@@ -90,6 +108,9 @@ export function TaskCardSheet({
   // Двухшаговое удаление: первый тап взводит кнопку на 3 секунды.
   const [deleteArmed, setDeleteArmed] = useState(false)
   const deleteTimer = useRef<number | null>(null)
+  // Для шаблонной задачи перенос спрашивает «только эту / эту и все следующие»;
+  // здесь лежит целевой день отложенного переноса.
+  const [pendingMove, setPendingMove] = useState<DateStr | null>(null)
   useEffect(
     () => () => {
       if (deleteTimer.current !== null) clearTimeout(deleteTimer.current)
@@ -130,12 +151,48 @@ export function TaskCardSheet({
     void softDeleteTask(taskId).then(onClose)
   }
 
-  const rows = paramRows(task, category?.name ?? null, today)
+  const rows = paramRows(task, category?.name ?? null, task.template_id ? repeatValue(template) : null, today)
+
+  // Перенос шаблонной задачи не выполняется сразу — сначала выбор «только эту /
+  // эту и все следующие». Выполнение при этом всегда трогает только экземпляр.
+  const moveOrAsk = (day: DateStr) => () => {
+    if (task.template_id) setPendingMove(day)
+    else void moveTaskToDay(taskId, day, today).then(onClose)
+  }
+
+  const moveOnlyThis = () => {
+    const day = pendingMove
+    if (day === null) return
+    setPendingMove(null)
+    void moveTaskToDay(taskId, day, today).then(onClose)
+  }
+
+  // «Эту и все следующие»: перенос расписания — шаблон с теми же полями,
+  // но серия стартует с нового дня (ТЗ §5.9).
+  const moveFollowing = () => {
+    const day = pendingMove
+    if (day === null || !template) return
+    setPendingMove(null)
+    void editThisAndFollowing(
+      taskId,
+      {
+        title: template.title,
+        note: template.note,
+        importance: template.importance,
+        urgency_manual: template.urgency_manual,
+        category_id: template.category_id,
+        due_time: template.due_time,
+        remind_before: template.remind_before,
+        rule: { ...templateRule(template), starts_on: day },
+      },
+      today,
+    ).then(onClose)
+  }
 
   const secondaries: { label: string; onClick: () => void }[] =
     st === 'live'
       ? [
-          { label: 'Перенести на завтра', onClick: run(() => moveTaskToDay(taskId, addDays(today, 1), today)) },
+          { label: 'Перенести на завтра', onClick: moveOrAsk(addDays(today, 1)) },
           { label: 'Убрать в инбокс', onClick: run(() => moveTaskToDay(taskId, null, today)) },
         ]
       : st === 'done'
@@ -147,7 +204,7 @@ export function TaskCardSheet({
       ? { label: 'Выполнено', onClick: run(() => completeTask(taskId, today)) }
       : st === 'done'
         ? { label: 'Вернуть в работу', onClick: run(() => reopenTask(taskId)) }
-        : { label: 'Перенести на сегодня', onClick: run(() => moveTaskToDay(taskId, today, today)) }
+        : { label: 'Перенести на сегодня', onClick: moveOrAsk(today) }
 
   return (
     <div
@@ -275,6 +332,49 @@ export function TaskCardSheet({
           {deleteArmed ? 'Точно удалить' : 'Удалить'}
         </button>
       </div>
+
+      {pendingMove !== null && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center px-6"
+          style={{ background: 'var(--scrim)' }}
+          onClick={() => setPendingMove(null)}
+        >
+          <div
+            className="w-full max-w-[320px] rounded-tile bg-surface p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-15 font-medium text-text">Повторяющаяся задача</div>
+            <div className="mt-1 text-13 text-text-muted">
+              Перенести только этот повтор или всю серию начиная с него?
+            </div>
+            <div className="mt-3 flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={moveOnlyThis}
+                className="h-11 w-full rounded-tile text-15 font-medium"
+                style={{ background: 'var(--text)', color: 'var(--bg)' }}
+              >
+                Только эту
+              </button>
+              <button
+                type="button"
+                disabled={!template}
+                onClick={moveFollowing}
+                className="h-11 w-full rounded-tile bg-surface2 text-15 font-medium text-text"
+              >
+                Эту и все следующие
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingMove(null)}
+                className="h-11 w-full rounded-tile text-15 text-text-muted"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -6,7 +6,7 @@ import type { TaskRow } from './contract'
 import type { DateStr, Importance, Urgency } from '../domain/types'
 import { effectiveUrgency } from '../domain/urgency'
 import { taskState } from '../domain/state'
-import { naturalCompare } from '../domain/ordering'
+import { isGapTooSmall, naturalCompare, orderIndexBetween } from '../domain/ordering'
 import { pokeSync } from './syncSignal'
 
 function nowIso(): string {
@@ -173,4 +173,26 @@ export async function renumberDay(userId: string, day: DateStr): Promise<void> {
 
 export function stateOf(task: TaskRow, today: DateStr) {
   return taskState(task, today)
+}
+
+/**
+ * Перетаскивание задаёт позицию в списке, а не координаты ячейки (ТЗ §5.7).
+ * index — куда встать среди открытых задач дня (без самой задачи).
+ */
+export async function placeTaskInDay(id: string, day: DateStr, index: number, userId: string): Promise<void> {
+  const list = async () =>
+    (await db.tasks.where('scheduled_on').equals(day).toArray())
+      .filter((t) => t.user_id === userId && !t.deleted_at && t.status === 'open' && t.id !== id)
+      .sort((a, b) => a.order_index - b.order_index)
+
+  let neighbors = await list()
+  let prev = index > 0 ? (neighbors[index - 1]?.order_index ?? null) : null
+  let next = neighbors[index]?.order_index ?? null
+  if (isGapTooSmall(prev, next)) {
+    await renumberDay(userId, day)
+    neighbors = await list()
+    prev = index > 0 ? (neighbors[index - 1]?.order_index ?? null) : null
+    next = neighbors[index]?.order_index ?? null
+  }
+  await updateTask(id, { scheduled_on: day, order_index: orderIndexBetween(prev, next) })
 }

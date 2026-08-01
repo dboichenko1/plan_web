@@ -13,6 +13,7 @@ import { Tile } from '../ui/Tile'
 import { toTileData } from '../ui/taskTile'
 import { dateLong, weekdayName } from '../ui/format'
 import { IconChevronDown, IconChevronLeft, IconChevronRight, IconInbox } from '../ui/icons'
+import { HangingPanel } from './HangingPanel'
 
 export function DayScreen({
   userId,
@@ -23,7 +24,6 @@ export function DayScreen({
   onOpenInbox,
   hangingOpen,
   onToggleHanging,
-  hangingPanel,
 }: {
   userId: string
   today: DateStr
@@ -33,7 +33,6 @@ export function DayScreen({
   onOpenInbox: () => void
   hangingOpen: boolean
   onToggleHanging: () => void
-  hangingPanel?: React.ReactNode
 }) {
   const tasks = useLive(
     () =>
@@ -123,15 +122,17 @@ export function DayScreen({
             <span className="flex items-center gap-2.5">
               <span className="text-13 text-text">Висят</span>
               <span className="font-mono text-13 text-text-muted">{hanging.length}</span>
-              <span className="flex gap-[3px]">
-                {hanging.slice(0, 8).map((t) => (
-                  <span
-                    key={t.id}
-                    className="h-[5px] w-[5px]"
-                    style={{ background: `var(--u${effectiveUrgency(t, today)})` }}
-                  />
-                ))}
-              </span>
+              {!hangingOpen && (
+                <span className="flex gap-[3px]">
+                  {hanging.slice(0, 8).map((t) => (
+                    <span
+                      key={t.id}
+                      className="h-[5px] w-[5px]"
+                      style={{ background: `var(--u${effectiveUrgency(t, today)})` }}
+                    />
+                  ))}
+                </span>
+              )}
             </span>
             <span
               className="text-text-quiet"
@@ -142,7 +143,9 @@ export function DayScreen({
           </button>
         )}
 
-        {day === today && hangingOpen && hangingPanel}
+        {day === today && hangingOpen && hanging.length > 0 && (
+          <HangingPanel tasks={hanging} today={today} cell={cell} catMap={catMap} />
+        )}
 
         <div className="mt-2.5">
           <CapacityBar occupied={occupied} capacity={capacity} />

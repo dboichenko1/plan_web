@@ -45,14 +45,15 @@ function indicatorColor(t: Pick<TileData, 'state' | 'urgency'>): string {
 
 export function Tile({ tile, style }: { tile: TileData; style?: CSSProperties }) {
   const expired = tile.state === 'expired'
+  const gray = tile.state === 'slipped' || expired
   const color = tileTextColor(tile)
-  const showCaption = tile.importance >= 3
-  const caption =
-    tile.state === 'slipped' || tile.state === 'expired'
-      ? tile.hangingDays > 0
-        ? hangingLabel(tile.hangingDays)
-        : null
-      : tile.caption
+  // «Срок · категория» — только на 2×2 и 4×2; «N дней висит» — и на 2×1 (макет 04).
+  const showCaption = gray ? tile.importance >= 2 : tile.importance >= 3
+  const caption = gray
+    ? tile.hangingDays > 0
+      ? hangingLabel(tile.hangingDays)
+      : null
+    : tile.caption
 
   return (
     <div
@@ -68,7 +69,7 @@ export function Tile({ tile, style }: { tile: TileData; style?: CSSProperties })
       }}
     >
       <div className="flex items-start justify-between">
-        <span className="flex items-center gap-[5px]" style={{ opacity: 0.85 }}>
+        <span className="flex items-center gap-[5px]" style={{ opacity: tile.state === 'live' ? 0.85 : 0.8 }}>
           {tile.categoryIcon && <CategoryIcon icon={tile.categoryIcon} size={tile.importance >= 4 ? 16 : 15} />}
           {tile.repeating && <IconRepeatRing style={{ opacity: 0.9 }} />}
         </span>
@@ -99,8 +100,8 @@ export function Tile({ tile, style }: { tile: TileData; style?: CSSProperties })
         </div>
         {showCaption && caption && (
           <div
-            className={tile.state === 'slipped' || tile.state === 'expired' ? 'font-mono text-11' : 'text-11'}
-            style={{ opacity: 0.66, marginTop: tile.importance === 4 ? 5 : 4 }}
+            className={gray ? 'font-mono text-11' : 'text-11'}
+            style={{ opacity: gray ? 0.75 : 0.66, marginTop: tile.importance === 4 ? 5 : tile.importance === 3 ? 4 : 3 }}
           >
             {caption}
           </div>

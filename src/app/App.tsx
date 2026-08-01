@@ -4,6 +4,9 @@ import { currentUserId, demoMode, useSession } from './session'
 import { useToday } from './useToday'
 import { LoginScreen } from '../screens/LoginScreen'
 import { DayScreen, useSelectedDay } from '../screens/DayScreen'
+import { InboxScreen } from '../screens/InboxScreen'
+import { TaskCardSheet } from '../screens/TaskCardSheet'
+import { CreateTaskSheet } from '../screens/CreateTaskSheet'
 import { TabBar, type Tab } from '../ui/TabBar'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
@@ -67,11 +70,32 @@ function Shell({ userId }: { userId: string }) {
 
   return (
     <div className="flex h-dvh flex-col bg-bg">
-      <main className="min-h-0 flex-1">{content}</main>
-      <TabBar active={tab} onSelect={setTab} onAdd={() => setCreateOpen(true)} />
-      {createOpen && <ComingSoon onClose={() => setCreateOpen(false)} label="Шторка создания" />}
-      {openTaskId && <ComingSoon onClose={() => setOpenTaskId(null)} label="Карточка задачи" />}
-      {inboxOpen && <ComingSoon onClose={() => setInboxOpen(false)} label="Инбокс" />}
+      <main className="relative min-h-0 flex-1">
+        {content}
+        {inboxOpen && seeded && (
+          <div className="absolute inset-0 bg-bg">
+            <InboxScreen userId={userId} today={today} onOpenTask={setOpenTaskId} />
+          </div>
+        )}
+      </main>
+      <TabBar
+        active={tab}
+        onSelect={(t) => {
+          setInboxOpen(false)
+          setTab(t)
+        }}
+        onAdd={() => setCreateOpen(true)}
+      />
+      <CreateTaskSheet
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        userId={userId}
+        today={today}
+        defaultDay={tab === 'day' ? day : today}
+      />
+      {openTaskId && (
+        <TaskCardSheet taskId={openTaskId} today={today} onClose={() => setOpenTaskId(null)} />
+      )}
     </div>
   )
 }
@@ -91,16 +115,3 @@ function Placeholder({ tab }: { tab: Tab }) {
   )
 }
 
-function ComingSoon({ onClose, label }: { onClose: () => void; label: string }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end"
-      style={{ background: 'var(--scrim)' }}
-      onClick={onClose}
-    >
-      <div className="w-full rounded-t-tile bg-surface p-4 pb-10 text-15 text-text-muted">
-        {label} — в следующей фазе
-      </div>
-    </div>
-  )
-}

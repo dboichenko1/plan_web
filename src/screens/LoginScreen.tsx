@@ -148,6 +148,15 @@ export function LoginScreen() {
               <p className="mt-1 text-11 text-text-quiet">
                 {state === 'error' ? error : 'Пришлём ссылку — пароль не нужен'}
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (email.trim()) setState('sent')
+                }}
+                className="self-start text-13 text-accent"
+              >
+                Есть код из письма?
+              </button>
             </>
           )}
         </form>

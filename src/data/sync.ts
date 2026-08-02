@@ -101,7 +101,7 @@ async function sendRow(client: SupabaseClient, row: OutboxRow): Promise<string |
     const res =
       row.op === 'upsert'
         ? await client.from(row.entity).upsert(row.payload)
-        : // delete используется только для task_tags: ключи лежат в payload
+        : // delete для любых entity (task_tags, tags, push_subscriptions): ключи в payload
           await client.from(row.entity).delete().match(row.payload)
     return res.error ? res.error.message : null
   } catch (e) {

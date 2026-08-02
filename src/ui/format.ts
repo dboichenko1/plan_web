@@ -64,6 +64,22 @@ export function dueLabel(due_on: DateStr, due_time: TimeStr | null, today: DateS
   return `${dateShort(due_on)}${time}`
 }
 
+/**
+ * Относительное время для меток обмена и устройств: «только что»,
+ * «5 минут назад». Единственные подписи, где работаем с ISO-меткой, а не
+ * с календарной датой — момент реален и пояс тут не врёт.
+ */
+export function relativeTime(iso: string, nowMs: number = Date.now()): string {
+  const ms = nowMs - Date.parse(iso)
+  if (!Number.isFinite(ms) || ms < 60_000) return 'только что'
+  const min = Math.floor(ms / 60_000)
+  if (min < 60) return `${min} ${plural(min, 'минуту', 'минуты', 'минут')} назад`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} ${plural(h, 'час', 'часа', 'часов')} назад`
+  const d = Math.floor(h / 24)
+  return `${d} ${plural(d, 'день', 'дня', 'дней')} назад`
+}
+
 export function tileCaption(
   due_on: DateStr | null,
   due_time: TimeStr | null,

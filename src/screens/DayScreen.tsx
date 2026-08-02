@@ -44,6 +44,7 @@ export function DayScreen({
   onToggleInbox,
   hangingOpen,
   onToggleHanging,
+  cols = 4,
 }: {
   userId: string
   today: DateStr
@@ -55,6 +56,8 @@ export function DayScreen({
   onToggleInbox: () => void
   hangingOpen: boolean
   onToggleHanging: () => void
+  /** Колонок на борде: 4 на телефоне, 8 в раскладке мака (макет 21). Ячейка не растёт. */
+  cols?: number
 }) {
   const tasks = useLive(
     () =>
@@ -89,7 +92,7 @@ export function DayScreen({
     .filter((t) => t.status === 'done')
     .sort((a, b) => ((a.completed_at ?? '') < (b.completed_at ?? '') ? 1 : -1))
 
-  const { ref, cell, width } = useCellSize(4)
+  const { ref, cell, width } = useCellSize(cols)
 
   // Перетаскивание: призрак занимает место приземления, соседи разъезжаются.
   const sensors = useBoardSensors()
@@ -278,7 +281,7 @@ export function DayScreen({
               {items.length === 0 && done.length === 0 ? (
                 <EmptyDay />
               ) : (
-                <BoardWithEndSlot items={items} cell={cell} />
+                <BoardWithEndSlot items={items} cell={cell} cols={cols} />
               )}
             </div>
           </div>
@@ -336,11 +339,11 @@ export function DayScreen({
 }
 
 /** Борд + невидимая зона «в конец» под ним. */
-function BoardWithEndSlot({ items, cell }: { items: BoardItem[]; cell: number }) {
+function BoardWithEndSlot({ items, cell, cols }: { items: BoardItem[]; cell: number; cols: number }) {
   const { setNodeRef } = useDroppable({ id: slotId('end') })
   return (
     <div ref={setNodeRef} className="pb-6">
-      <Board items={items} cell={cell} />
+      <Board items={items} cols={cols} cell={cell} />
     </div>
   )
 }

@@ -82,10 +82,13 @@ export function TaskCardSheet({
   taskId,
   onClose,
   today,
+  embedded = false,
 }: {
   taskId: string
   onClose: () => void
   today: DateStr
+  /** Правая панель раскладки мака (макет 21): обычный блок на всю высоту вместо fixed. */
+  embedded?: boolean
 }) {
   const task = useLive(() => db.tasks.get(taskId), [taskId])
   const catId = task?.category_id ?? null
@@ -208,12 +211,12 @@ export function TaskCardSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className={embedded ? 'flex h-full flex-col' : 'fixed inset-0 z-50 flex flex-col'}
       style={{
         background: fill,
         color,
         border: st === 'expired' ? '1px solid var(--expired-outline)' : undefined,
-        paddingTop: 'env(safe-area-inset-top)',
+        paddingTop: embedded ? undefined : 'env(safe-area-inset-top)',
       }}
     >
       <div className="flex shrink-0 items-start justify-between px-4 pt-2.5">

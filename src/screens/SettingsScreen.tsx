@@ -9,6 +9,9 @@ import { useLive } from '../data/hooks'
 import { supabase } from '../data/supabase'
 import { pullSince, useSyncStatus, type SyncStatus, retryFailedOutbox, discardFailedOutbox } from '../data/sync'
 import { bulkInsertTasks, softDeleteTask } from '../data/repo'
+import { createTemplate } from '../data/templates'
+import type { Rule } from '../domain/recurrence'
+import { addDays, daysBetween, isoWeekday } from '../domain/date'
 import { deleteTag, exportJson, updateCategory, updateProfile } from '../data/profile'
 import { demoMode } from '../app/session'
 import { useTheme } from '../app/theme'
@@ -88,6 +91,48 @@ export function SettingsScreen({
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<string | null>(null)
 
+  // Повторяемость: Google метит экземпляры одной серии общим task_recurrence_id.
+  // Правило выводим по датам: мода зазоров между соседними датами.
+  function inferRule(dates: string[], today: string): Rule | null {
+    const uniq = [...new Set(dates)].sort()
+    if (uniq.length < 3) return null
+    const gaps = new Map<number, number>()
+    for (let i = 1; i < uniq.length; i++) {
+      const g = daysBetween(uniq[i - 1]!, uniq[i]!)
+      if (g > 0) gaps.set(g, (gaps.get(g) ?? 0) + 1)
+    }
+    let gap = 0
+    let best = 0
+    for (const [g, n] of gaps) if (n > best || (n === best && g < gap)) { gap = g; best = n }
+    if (gap === 0) return null
+    const last = uniq[uniq.length - 1]!
+    if (gap === 1) return { freq: 'daily', step: 1, starts_on: today, ends: { mode: 'never' } }
+    if (gap % 7 === 0 && gap <= 28)
+      return {
+        freq: 'weekly',
+        step: gap / 7,
+        byweekday: [isoWeekday(last)],
+        starts_on: today,
+        ends: { mode: 'never' },
+      }
+    if (gap >= 28 && gap <= 31)
+      return {
+        freq: 'monthly',
+        step: 1,
+        bymonthday: Number(last.slice(8, 10)),
+        starts_on: today,
+        ends: { mode: 'never' },
+      }
+    if (gap >= 364 && gap <= 366) return { freq: 'yearly', step: 1, starts_on: last <= today ? today : last, ends: { mode: 'never' } }
+    if (gap < 28) {
+      // редкий, но регулярный шаг в днях: якорим фазу от последней даты
+      let anchor = last
+      while (anchor < today) anchor = addDays(anchor, gap)
+      return { freq: 'daily', step: gap, starts_on: anchor, ends: { mode: 'never' } }
+    }
+    return null
+  }
+
   // Tasks.json из Google Takeout. Реальный формат: items[].items[] с полями
   // title, status (needsAction|completed), created/updated/completed (ISO),
   // scheduled_time: [{start: ISO}], starred, notes, task_recurrence_id.
@@ -111,10 +156,15 @@ export function SettingsScreen({
       for (const t of stale) await softDeleteTask(t.id)
 
       const nowTs = new Date().toISOString()
+      // Дедуп: повторный импорт не создаёт дубликатов и не воскрешает удалённое.
+      const existing = await db.tasks.filter((t) => t.user_id === userId).toArray()
+      const seen = new Set(existing.map((t) => `${t.title}\u0000${t.scheduled_on ?? ''}\u0000${t.status}`))
       const rows: TaskRow[] = []
+      const series = new Map<string, { dates: string[]; title: string; note: string | null; starred: boolean; time: string | null; lastOpen: string | null }>()
       let toDays = 0
       let toInbox = 0
       let doneCount = 0
+      let skipped = 0
       for (const list of lists) {
         const items = (list as { items?: unknown }).items
         if (!Array.isArray(items)) continue
@@ -137,6 +187,27 @@ export function SettingsScreen({
           const created = typeof item['created'] === 'string' ? item['created'] : nowTs
           const done = item['status'] === 'completed'
           const completed = typeof item['completed'] === 'string' ? item['completed'] : null
+
+          const recurrenceId = item['task_recurrence_id']
+          if (typeof recurrenceId === 'string' && date) {
+            const g = series.get(recurrenceId) ?? {
+              dates: [], title, note: null, starred: false, time: null, lastOpen: null,
+            }
+            g.dates.push(date)
+            g.title = title
+            g.note = typeof notes === 'string' && notes.trim() ? notes.trim() : g.note
+            g.starred = g.starred || Boolean(item['starred'])
+            g.time = time ?? g.time
+            if (!done && (!g.lastOpen || date > g.lastOpen)) g.lastOpen = date
+            series.set(recurrenceId, g)
+          }
+
+          const key = `${title.slice(0, 200)}\u0000${date ?? (done && completed ? completed.slice(0, 10) : '')}\u0000${done ? 'done' : 'open'}`
+          if (seen.has(key)) {
+            skipped++
+            continue
+          }
+          seen.add(key)
 
           rows.push({
             id: crypto.randomUUID(),
@@ -167,12 +238,48 @@ export function SettingsScreen({
         }
       }
 
+      // Живые серии (последняя дата не старше 45 дней) продолжают жить шаблоном:
+      // кольцо повтора и новые повторения на 60 дней вперёд.
+      let templates = 0
+      const existingTpl = await db.task_templates
+        .filter((t) => t.user_id === userId && !t.archived_at)
+        .toArray()
+      const tplSeen = new Set(existingTpl.map((t) => t.title))
+      for (const g of series.values()) {
+        if (tplSeen.has(g.title)) continue
+        const lastDate = [...g.dates].sort().pop()
+        if (!lastDate || daysBetween(lastDate, today) > 45) continue
+        const rule = inferRule(g.dates, today)
+        if (!rule) continue
+        // будущие открытые повторения серии создаст шаблон — из строк их убираем
+        for (let i = rows.length - 1; i >= 0; i--) {
+          const r = rows[i]!
+          if (r.status === 'open' && r.title === g.title.slice(0, 200) && r.scheduled_on && r.scheduled_on >= today) {
+            rows.splice(i, 1)
+            toDays--
+          }
+        }
+        await createTemplate(
+          {
+            title: g.title,
+            note: g.note,
+            importance: g.starred ? 3 : 2,
+            urgency_manual: 1,
+            due_time: g.time,
+            rule,
+          },
+          userId,
+          today,
+        )
+        tplSeen.add(g.title)
+        templates++
+      }
+
       await bulkInsertTasks(rows)
-      setImportResult(
-        rows.length === 0
-          ? 'В файле не нашлось задач'
-          : `Перенесено ${rows.length}: ${toDays} по дням, ${toInbox} без даты, ${doneCount} выполненных в историю`,
-      )
+      const parts = [`${toDays} по дням`, `${toInbox} без даты`, `${doneCount} выполненных в историю`]
+      if (templates > 0) parts.push(`${templates} ${plural(templates, 'повтор', 'повтора', 'повторов')} ожило`)
+      if (skipped > 0) parts.push(`${skipped} уже было`)
+      setImportResult(rows.length === 0 && templates === 0 ? 'Всё уже перенесено' : `Перенесено: ${parts.join(', ')}`)
     } catch {
       setImportResult('Не получилось разобрать файл — нужен Tasks.json из выгрузки Takeout')
     } finally {

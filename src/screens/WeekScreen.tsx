@@ -2,17 +2,20 @@
 // мозаика packDay, что и борд дня, только в масштабе 0.5 и растущая вправо,
 // поэтому по неделе сразу видно, где день перегружен и где посыпалось.
 
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
 import type { CategoryRow, TaskRow } from '../data/contract'
 import { addDays, daysBetween, isoWeekday } from '../domain/date'
 import { COLS, TILE, occupiedCells, packDay } from '../domain/packing'
+import { naturalCompare } from '../domain/ordering'
+import { effectiveUrgency } from '../domain/urgency'
+import { Tile } from '../ui/Tile'
+import { toTileData } from '../ui/taskTile'
 import { taskState } from '../domain/state'
 import type { DateStr } from '../domain/types'
-import { useCellSize } from '../ui/Board'
+import { Board, useCellSize, type BoardItem } from '../ui/Board'
 import { tileFill, tileTextColor, type TileData } from '../ui/Tile'
-import { toTileData } from '../ui/taskTile'
 import { dateShort, weekdayShort } from '../ui/format'
 import { CategoryIcon, IconChevronLeft, IconChevronRight } from '../ui/icons'
 
@@ -81,7 +84,35 @@ export function WeekScreen({
   // Ячейка недели — половина ячейки борда дня.
   const mini = Math.floor(cell / 2)
 
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const [mode, setMode] = useState<'days' | 'canvas'>('days')
+  const baseDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  // Сегодняшняя полоса — первой, остальные по порядку дат.
+  const days = baseDays.includes(today) ? [today, ...baseDays.filter((d) => d !== today)] : baseDays
+
+  // Полотно недели: все открытые задачи одной мозаикой, горячее сверху.
+  const canvasItems: BoardItem[] = useMemo(() => {
+    const open = (tasks ?? [])
+      .filter((t) => t.status === 'open')
+      .sort((a, b) =>
+        naturalCompare(
+          { urgency: effectiveUrgency(a, today), importance: a.importance },
+          { urgency: effectiveUrgency(b, today), importance: b.importance },
+        ),
+      )
+    return open.map((t) => ({
+      id: t.id,
+      importance: t.importance,
+      content: (
+        <button
+          type="button"
+          className="block h-full w-full text-left"
+          onClick={() => t.scheduled_on && onOpenDay(t.scheduled_on)}
+        >
+          <Tile tile={toTileData(t, today, catMap)} style={{ height: '100%' }} />
+        </button>
+      ),
+    }))
+  }, [tasks, today, catMap, onOpenDay])
   const currentMonday = addDays(today, -(isoWeekday(today) - 1))
   const capacity = profile?.day_capacity ?? 32
 
@@ -98,6 +129,13 @@ export function WeekScreen({
             </div>
           </div>
           <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'days' ? 'canvas' : 'days')}
+              className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
+            >
+              {mode === 'days' ? 'полотно' : 'по дням'}
+            </button>
             {onOpenPeriod && (
               <button
                 type="button"
@@ -127,6 +165,17 @@ export function WeekScreen({
       </header>
 
       <div ref={ref} className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+        {mode === 'canvas' ? (
+          <div className="pt-2.5">
+            <Board items={canvasItems} cell={cell} animate={false} />
+            {canvasItems.length === 0 && (
+              <p className="pt-20 text-center text-15 text-text-muted">На этой неделе пусто.</p>
+            )}
+            <div className="pt-2 font-mono text-11 text-text-quiet">
+              все открытые задачи недели · горячее сверху · тап открывает день
+            </div>
+          </div>
+        ) : (
         <div className="flex flex-col gap-1 pt-2.5">
           {days.map((day) => (
             <DayStrip
@@ -141,9 +190,12 @@ export function WeekScreen({
             />
           ))}
         </div>
-        <div className="pt-2 font-mono text-11 text-text-quiet">
-          полоса скроллится вбок · серое в прошедших днях — что посыпалось
-        </div>
+        )}
+        {mode === 'days' && (
+          <div className="pt-2 font-mono text-11 text-text-quiet">
+            полоса скроллится вбок · серое в прошедших днях — что посыпалось
+          </div>
+        )}
       </div>
     </div>
   )

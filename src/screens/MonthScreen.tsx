@@ -2,18 +2,20 @@
 // борда дня. Та же укладка packDay, что и на дне, только плитки уменьшены до
 // заливок без текста — серые слетевшие дни видны в мозаике честно.
 
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
-import type { TaskRow } from '../data/contract'
+import type { CategoryRow, TaskRow } from '../data/contract'
 import { addDays, daysInMonth, isoWeekday } from '../domain/date'
 import { packDay } from '../domain/packing'
+import { naturalCompare } from '../domain/ordering'
 import { taskState } from '../domain/state'
 import { effectiveUrgency } from '../domain/urgency'
 import type { DateStr } from '../domain/types'
-import { useCellSize } from '../ui/Board'
-import { tileFill } from '../ui/Tile'
+import { Board, useCellSize, type BoardItem } from '../ui/Board'
+import { Tile, tileFill } from '../ui/Tile'
 import { WEEKDAYS_SHORT, dateLong } from '../ui/format'
+import { toTileData } from '../ui/taskTile'
 import { IconChevronLeft, IconChevronRight } from '../ui/icons'
 
 const MONTHS_NOM = [
@@ -94,6 +96,37 @@ export function MonthScreen({
 
   const { ref, cell, width } = useCellSize(7)
   const cellH = Math.round(cell * 1.1)
+  const [mode, setMode] = useState<'grid' | 'canvas'>('grid')
+  const categories = useLive(() => db.categories.toArray(), [userId])
+  const catMap = useMemo(
+    () => new Map<string, CategoryRow>((categories ?? []).map((c) => [c.id, c])),
+    [categories],
+  )
+  // Полотно месяца: все открытые задачи одной мозаикой, горячее сверху.
+  const canvasCell = Math.min(89, Math.floor((width - 3 * 4) / 4))
+  const canvasItems: BoardItem[] = useMemo(() => {
+    const open = (tasks ?? [])
+      .filter((t) => t.status === 'open')
+      .sort((a, b) =>
+        naturalCompare(
+          { urgency: effectiveUrgency(a, today), importance: a.importance },
+          { urgency: effectiveUrgency(b, today), importance: b.importance },
+        ),
+      )
+    return open.map((t) => ({
+      id: t.id,
+      importance: t.importance,
+      content: (
+        <button
+          type="button"
+          className="block h-full w-full text-left"
+          onClick={() => t.scheduled_on && onOpenDay(t.scheduled_on)}
+        >
+          <Tile tile={toTileData(t, today, catMap)} style={{ height: '100%' }} />
+        </button>
+      ),
+    }))
+  }, [tasks, today, catMap, onOpenDay])
 
   return (
     <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -110,6 +143,13 @@ export function MonthScreen({
             </div>
           </div>
           <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'grid' ? 'canvas' : 'grid')}
+              className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
+            >
+              {mode === 'grid' ? 'полотно' : 'сетка'}
+            </button>
             {month !== today.slice(0, 7) && (
               <button
                 type="button"
@@ -132,6 +172,18 @@ export function MonthScreen({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         <div ref={ref} className="pt-3.5">
           <div style={{ width, margin: '0 auto' }}>
+            {mode === 'canvas' ? (
+              <>
+                <Board items={canvasItems} cell={canvasCell} animate={false} />
+                {canvasItems.length === 0 && (
+                  <p className="pt-20 text-center text-15 text-text-muted">В этом месяце пусто.</p>
+                )}
+                <div className="pt-2 font-mono text-11 text-text-quiet">
+                  все открытые задачи месяца · горячее сверху · тап открывает день
+                </div>
+              </>
+            ) : (
+            <>
             <div className="flex gap-1">
               {WEEKDAYS_SHORT.map((wd) => (
                 <span
@@ -175,6 +227,8 @@ export function MonthScreen({
               <LegendDot fill="var(--slipped-fill)" label="слетело" />
               <LegendDot fill="var(--done-fill)" label="сделано" />
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

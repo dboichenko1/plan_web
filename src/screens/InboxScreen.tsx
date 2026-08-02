@@ -142,7 +142,7 @@ export function InboxScreen({
             свайп вправо — на сегодня · влево — удалить · долгое нажатие — перетащить
           </p>
         )}
-        {total > 0 && !compact && (
+        {total > 0 && (
           <button
             type="button"
             onClick={() => {

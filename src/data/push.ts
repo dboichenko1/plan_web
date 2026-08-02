@@ -12,7 +12,32 @@ export function pushSupported(): boolean {
 
 export async function registerSW(): Promise<void> {
   if (!('serviceWorker' in navigator)) return
-  await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
+  const reg = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
+
+  // Свежий деплой подхватывается сам: новому воркеру велим не ждать,
+  // при смене контролёра перезагружаемся один раз.
+  const activate = (worker: ServiceWorker | null) => {
+    worker?.postMessage({ type: 'SKIP_WAITING' })
+  }
+  if (reg.waiting) activate(reg.waiting)
+  reg.addEventListener('updatefound', () => {
+    const installing = reg.installing
+    installing?.addEventListener('statechange', () => {
+      if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+        activate(installing)
+      }
+    })
+  })
+  let reloaded = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return
+    reloaded = true
+    window.location.reload()
+  })
+  // возврат из фона — повод спросить обновление
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void reg.update()
+  })
 }
 
 /** VAPID-ключ приходит в base64url, pushManager хочет сырые байты. */

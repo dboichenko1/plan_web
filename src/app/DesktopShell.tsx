@@ -20,6 +20,7 @@ import { PeriodScreen } from '../screens/PeriodScreen'
 import { InboxScreen } from '../screens/InboxScreen'
 import { TaskCardSheet } from '../screens/TaskCardSheet'
 import { CreateTaskSheet } from '../screens/CreateTaskSheet'
+import { StatsScreen } from '../screens/stats/StatsScreen'
 import type { Tab } from '../ui/TabBar'
 import { dateLong, weekdayName } from '../ui/format'
 import { IconPlus, IconSearch } from '../ui/icons'
@@ -114,12 +115,7 @@ export function DesktopShell({ userId }: { userId: string }) {
           />
         )
       default:
-        // Экраны статистики пишутся параллельно — здесь только заглушка.
-        return (
-          <div className="flex h-full items-center justify-center">
-            <span className="font-tile text-24 text-text-quiet">Статистика</span>
-          </div>
-        )
+        return <StatsScreen userId={userId} today={today} />
     }
   })()
 

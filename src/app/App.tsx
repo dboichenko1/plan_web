@@ -11,6 +11,7 @@ import { PeriodScreen } from '../screens/PeriodScreen'
 import { TaskCardSheet } from '../screens/TaskCardSheet'
 import { CreateTaskSheet } from '../screens/CreateTaskSheet'
 import { SettingsScreen } from '../screens/SettingsScreen'
+import { StatsScreen } from '../screens/stats/StatsScreen'
 import { NotificationsSettings } from '../screens/NotificationsSettings'
 import { ThemeScreen } from '../screens/ThemeScreen'
 import { TabBar, type Tab } from '../ui/TabBar'
@@ -145,7 +146,13 @@ function Shell({ userId }: { userId: string }) {
           />
         )
       case 'stats':
-        return <Placeholder tab={tab} />
+        return (
+          <StatsScreen
+            userId={userId}
+            today={today}
+            onOpenSettings={() => setSettingsView('settings')}
+          />
+        )
     }
   })()
 
@@ -176,17 +183,4 @@ function Shell({ userId }: { userId: string }) {
   )
 }
 
-const TITLES: Record<Tab, string> = {
-  day: 'День',
-  week: 'Неделя',
-  month: 'Месяц',
-  stats: 'Статистика',
-}
 
-function Placeholder({ tab }: { tab: Tab }) {
-  return (
-    <div className="flex h-full items-center justify-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <span className="font-tile text-24 text-text-quiet">{TITLES[tab]}</span>
-    </div>
-  )
-}

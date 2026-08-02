@@ -27,6 +27,7 @@ export function SwipeRow({
   disabled?: boolean
 }) {
   const [dx, setDx] = useState(0)
+  const dxRef = useRef(0)
   const [animating, setAnimating] = useState(false)
   const start = useRef<{ x: number; y: number; captured: boolean; id: number } | null>(null)
 
@@ -51,6 +52,9 @@ export function SwipeRow({
       s.captured = true
       e.currentTarget.setPointerCapture(s.id)
     }
+    // Быстрый свайп отпускается раньше, чем React дорендерит dx —
+    // актуальное значение живёт в ref.
+    dxRef.current = ddx
     setDx(ddx)
   }
 
@@ -63,15 +67,11 @@ export function SwipeRow({
       return
     }
     setAnimating(true)
-    if (dx > TRIGGER) {
-      setDx(0)
-      onSwipeRight()
-    } else if (dx < -TRIGGER) {
-      setDx(0)
-      onSwipeLeft()
-    } else {
-      setDx(0)
-    }
+    const final = dxRef.current
+    dxRef.current = 0
+    setDx(0)
+    if (final > TRIGGER) onSwipeRight()
+    else if (final < -TRIGGER) onSwipeLeft()
   }
 
   return (

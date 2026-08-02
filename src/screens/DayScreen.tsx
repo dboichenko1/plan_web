@@ -147,7 +147,7 @@ export function DayScreen({
     const over = e.over?.id
     if (typeof over === 'string') {
       const slot = parseSlotId(over)
-      if (slot !== null) setGhostIndex(slot)
+      if (slot !== null && (slot === 'end' || slot >= 0)) setGhostIndex(slot)
     }
   }
 
@@ -283,6 +283,21 @@ export function DayScreen({
               ) : (
                 <BoardWithEndSlot items={items} cell={cell} cols={cols} />
               )}
+              {dragging?.type === 'board-tile' && (
+                // Активный draggable обязан оставаться смонтированным: из укладки
+                // плитка исключена, но узел живёт скрыто — иначе dnd-kit теряет
+                // active, dragEnd не приходит и перетаскивание зависает.
+                <div className="pointer-events-none absolute h-0 w-0 overflow-hidden" aria-hidden>
+                  <BoardTile
+                    index={-1}
+                    task={dragging.task}
+                    today={today}
+                    catMap={catMap}
+                    dragActive
+                    onOpen={() => {}}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -378,6 +393,9 @@ function BoardTile({
   // активировать перетаскивание (у него задержка 200 мс).
   const swipe = useRef<{ x: number; y: number; captured: boolean } | null>(null)
   const [dx, setDx] = useState(0)
+  // Быстрый свайп отпускается раньше, чем React дорендерит dx — актуальное
+  // значение живёт в ref.
+  const dxRef = useRef(0)
   const [completing, setCompleting] = useState(false)
 
   const state = taskState(task, today)
@@ -406,7 +424,8 @@ function BoardTile({
             if (ddx < 10 || Math.abs(ddx) < Math.abs(ddy) * 1.4) return
             s.captured = true
           }
-          setDx(Math.max(0, ddx))
+          dxRef.current = Math.max(0, ddx)
+          setDx(dxRef.current)
         }}
         onPointerUp={(e) => {
           const s = swipe.current
@@ -414,20 +433,21 @@ function BoardTile({
           if (!s) return
           if (!s.captured) {
             if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < 6 && !dragActive) onOpen()
+            dxRef.current = 0
             setDx(0)
             return
           }
-          if (dx > 90) {
+          if (dxRef.current > 90) {
             // Заливка своим цветом слева направо, затем гаснет и уезжает в «Сделано».
             setCompleting(true)
-            setDx(0)
             setTimeout(() => void completeTask(task.id, today), 200)
-          } else {
-            setDx(0)
           }
+          dxRef.current = 0
+          setDx(0)
         }}
         onPointerCancel={() => {
           swipe.current = null
+          dxRef.current = 0
           setDx(0)
         }}
       >

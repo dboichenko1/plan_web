@@ -23,16 +23,18 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  event.waitUntil(clients.openWindow('/'))
+  event.waitUntil(clients.openWindow(ROOT))
 })
 
 // --- Офлайн-оболочка — фаза 12 ---
 // Vite хеширует имена чанков, поэтому precache-список захардкодить нельзя:
-// на install кешируем только '/', остальное докешируется на лету в fetch.
-const CACHE_NAME = 'plan-shell-v1'
+// на install кешируем только оболочку, остальное докешируется на лету в fetch.
+const CACHE_NAME = 'plan-shell-v2'
+// Корень приложения из scope: на GitHub Pages это подпуть вида '/plan_web/'.
+const ROOT = new URL(self.registration.scope).pathname
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add('/')))
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add(ROOT)))
 })
 
 self.addEventListener('activate', (event) => {
@@ -54,19 +56,19 @@ self.addEventListener('message', (event) => {
   }
 })
 
-// Навигации: network-first, при офлайне отдаём закешированный '/'
+// Навигации: network-first, при офлайне отдаём закешированную оболочку
 // (SPA — любой маршрут рендерится тем же index.html).
 async function shellNetworkFirst(request) {
   const cache = await caches.open(CACHE_NAME)
   try {
     const response = await fetch(request)
     if (response.ok) {
-      // Свежую оболочку кладём под ключ '/', независимо от маршрута.
-      await cache.put('/', response.clone())
+      // Свежую оболочку кладём под ключ корня, независимо от маршрута.
+      await cache.put(ROOT, response.clone())
     }
     return response
   } catch {
-    const cached = await cache.match('/')
+    const cached = await cache.match(ROOT)
     return cached || Response.error()
   }
 }
@@ -98,9 +100,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     // Same-origin статика: хешированные чанки Vite, иконки, манифест.
     if (
-      url.pathname.startsWith('/assets/') ||
-      url.pathname.startsWith('/icons/') ||
-      url.pathname === '/manifest.webmanifest'
+      url.pathname.startsWith(ROOT + 'assets/') ||
+      url.pathname.startsWith(ROOT + 'icons/') ||
+      url.pathname === ROOT + 'manifest.webmanifest'
     ) {
       event.respondWith(cacheFirst(request))
     }

@@ -25,4 +25,9 @@ npm run dev
 
 ## Хостинг
 
-Cloudflare Pages: сборка `npm run build`, каталог `dist`, переменные окружения `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`.
+GitHub Pages: пуш в `main` собирает и выкатывает страницу (`.github/workflows/pages.yml`).
+Настройка один раз: Settings → Pages → Source: «GitHub Actions»; Settings → Secrets and
+variables → Actions → Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+`VITE_VAPID_PUBLIC_KEY` (публичные значения). Страница живёт на
+`https://<ник>.github.io/<репозиторий>/` — приложение собрано под подпуть
+(`BASE_PATH`), с корнем или своим доменом тоже работает.

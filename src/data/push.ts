@@ -12,7 +12,7 @@ export function pushSupported(): boolean {
 
 export async function registerSW(): Promise<void> {
   if (!('serviceWorker' in navigator)) return
-  await navigator.serviceWorker.register('/sw.js')
+  await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
 }
 
 /** VAPID-ключ приходит в base64url, pushManager хочет сырые байты. */

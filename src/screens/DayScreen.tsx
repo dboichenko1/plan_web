@@ -240,7 +240,7 @@ export function DayScreen({
               className="mt-2.5 flex h-[34px] w-full items-center justify-between rounded-tile bg-surface px-3"
             >
               <span className="flex items-center gap-2.5">
-                <span className="text-13 text-text">Висят</span>
+                <span className="text-13 text-text">Просроченные</span>
                 <span className="font-mono text-13 text-text-muted">{hanging.length}</span>
                 {!hangingOpen && (
                   <span className="flex gap-[3px]">
@@ -267,7 +267,7 @@ export function DayScreen({
           )}
 
           {day === today && hangingOpen && hanging.length > 0 && (
-            <HangingPanel tasks={hanging} today={today} cell={cell} catMap={catMap} />
+            <HangingPanel tasks={hanging} today={today} cell={cell} catMap={catMap} onCollapse={onToggleHanging} />
           )}
 
           <div className="mt-2.5">

@@ -17,13 +17,16 @@ export function HangingPanel({
   today,
   cell,
   catMap,
+  onCollapse,
 }: {
   tasks: TaskRow[]
   today: DateStr
   cell: number
   catMap: ReadonlyMap<string, CategoryRow>
+  onCollapse: () => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [wipeArmed, setWipeArmed] = useState(false)
   const dateInput = useRef<HTMLInputElement>(null)
 
   const ordered = [...tasks].sort((a, b) =>
@@ -59,8 +62,21 @@ export function HangingPanel({
 
   return (
     <div className="mt-1">
+      <div className="mb-1.5 flex items-center justify-between pt-1">
+        <span>
+          <span className="text-13 font-medium text-text">Просроченные задачи · {tasks.length}</span>
+          <span className="ml-2 hidden font-mono text-11 text-text-quiet sm:inline">не сделаны в свой день</span>
+        </span>
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="flex h-[30px] items-center rounded-tile bg-surface2 px-3 text-[12px] text-text"
+        >
+          Свернуть
+        </button>
+      </div>
       <Board items={items} cell={cell} />
-      <div className="mt-1.5 flex items-center gap-1">
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
         <Chip
           disabled={!selectedId}
           onClick={() => act((id) => moveTaskToDay(id, today, today))}
@@ -76,6 +92,25 @@ export function HangingPanel({
         <span className="ml-1 self-center font-mono text-[10px] text-text-quiet">
           {selectedId ? 'действия по выбранной' : 'выберите плитку'}
         </span>
+        <button
+          type="button"
+          onClick={() => {
+            if (!wipeArmed) {
+              setWipeArmed(true)
+              setTimeout(() => setWipeArmed(false), 3000)
+              return
+            }
+            setWipeArmed(false)
+            for (const t of tasks) void softDeleteTask(t.id)
+          }}
+          className="ml-auto flex h-[30px] shrink-0 items-center whitespace-nowrap rounded-tile px-3 text-[12px]"
+          style={{
+            background: 'var(--surface2)',
+            color: wipeArmed ? 'var(--accent-alt)' : 'var(--text-muted)',
+          }}
+        >
+          {wipeArmed ? `Точно удалить все ${tasks.length}` : 'Удалить все'}
+        </button>
         <input
           ref={dateInput}
           type="date"
@@ -108,7 +143,7 @@ function Chip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-[30px] items-center rounded-tile bg-surface2 px-3 text-[12px] ${
+      className={`flex h-[30px] shrink-0 items-center whitespace-nowrap rounded-tile bg-surface2 px-3 text-[12px] ${
         muted ? 'text-text-muted' : 'text-text'
       } disabled:opacity-50`}
     >

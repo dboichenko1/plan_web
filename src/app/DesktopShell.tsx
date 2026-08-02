@@ -182,7 +182,7 @@ export function DesktopShell({ userId }: { userId: string }) {
               }}
               className="flex h-[30px] items-center gap-2.5 rounded-tile bg-surface px-3"
             >
-              <span className="text-13 text-text">Висят</span>
+              <span className="text-13 text-text">Просроченные</span>
               <span className="font-mono text-13 text-text-muted">{hanging.length}</span>
               <span className="flex gap-[3px]">
                 {hanging.slice(0, 4).map((t) => (

@@ -35,9 +35,11 @@ jobs:
         env:
           # Проектная страница живёт на /<имя репозитория>/
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+          # Значения по умолчанию — публичные по архитектуре (anon-ключ и так
+          # виден в бандле, безопасность на RLS); Variables репозитория их переопределяют.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://qlanlvhxiixdhozpsbwr.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYW5sdmh4aWl4ZGhvenBzYndyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2Mzg5NDksImV4cCI6MjEwMTIxNDk0OX0.BC-Z5eliOdb2TkLjgcvUCP_ooHqe7pwO8HG4xAxzg_A' }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY || 'BDkcPQ3wqbpY14s07cjdkCvjCZDZIjM2ui8FdqB8Lw2kg-2bjTFzULt13zOOxx_V-FPAPUe0mUCukTuvUkZ5e7U' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

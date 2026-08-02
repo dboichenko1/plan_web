@@ -21,9 +21,12 @@ import { InboxScreen } from '../screens/InboxScreen'
 import { TaskCardSheet } from '../screens/TaskCardSheet'
 import { CreateTaskSheet } from '../screens/CreateTaskSheet'
 import { StatsScreen } from '../screens/stats/StatsScreen'
+import { SettingsScreen } from '../screens/SettingsScreen'
+import { NotificationsSettings } from '../screens/NotificationsSettings'
+import { ThemeScreen } from '../screens/ThemeScreen'
 import type { Tab } from '../ui/TabBar'
 import { dateLong, weekdayName } from '../ui/format'
-import { IconPlus, IconSearch } from '../ui/icons'
+import { IconPlus, IconSearch, IconSettings } from '../ui/icons'
 
 const MODES: { id: Tab; label: string }[] = [
   { id: 'day', label: 'день' },
@@ -49,6 +52,7 @@ export function DesktopShell({ userId }: { userId: string }) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null)
   const [hangingOpen, setHangingOpen] = useState(false)
   const [periodOpen, setPeriodOpen] = useState(false)
+  const [settingsView, setSettingsView] = useState<null | 'settings' | 'notifications' | 'theme'>(null)
 
   const profile = useLive(() => db.profiles.get(userId), [userId])
   const timeZone = profile?.timezone ?? 'Europe/Warsaw'
@@ -86,12 +90,26 @@ export function DesktopShell({ userId }: { userId: string }) {
   const openDay = (d: string) => {
     setDay(d)
     setPeriodOpen(false)
+    setSettingsView(null)
     setTab('day')
   }
 
   const title = tab === 'day' ? `${weekdayName(day)}, ${dateLong(day)}` : MODE_TITLES[tab]
 
   const wideContent = (() => {
+    if (settingsView === 'settings')
+      return (
+        <SettingsScreen
+          userId={userId}
+          today={today}
+          onOpenNotifications={() => setSettingsView('notifications')}
+          onOpenTheme={() => setSettingsView('theme')}
+        />
+      )
+    if (settingsView === 'notifications')
+      return <NotificationsSettings userId={userId} onBack={() => setSettingsView('settings')} />
+    if (settingsView === 'theme')
+      return <ThemeScreen userId={userId} onBack={() => setSettingsView('settings')} />
     if (periodOpen) return <PeriodScreen userId={userId} today={today} onOpenDay={openDay} />
     switch (tab) {
       case 'week':
@@ -134,6 +152,7 @@ export function DesktopShell({ userId }: { userId: string }) {
                   type="button"
                   onClick={() => {
                     setPeriodOpen(false)
+                    setSettingsView(null)
                     setTab(m.id)
                   }}
                   className={`flex h-[30px] items-center rounded-tile px-3.5 text-13 ${
@@ -178,6 +197,14 @@ export function DesktopShell({ userId }: { userId: string }) {
           )}
           <button
             type="button"
+            aria-label="Настройки"
+            onClick={() => setSettingsView((v) => (v ? null : 'settings'))}
+            className="flex h-[30px] w-[30px] items-center justify-center rounded-tile bg-surface text-text-muted"
+          >
+            <IconSettings size={15} />
+          </button>
+          <button
+            type="button"
             onClick={() => setCreateOpen(true)}
             className="flex h-[30px] items-center gap-1.5 rounded-tile px-3.5 text-13 font-medium"
             style={{ background: 'var(--text)', color: 'var(--bg)' }}
@@ -189,7 +216,7 @@ export function DesktopShell({ userId }: { userId: string }) {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        {!seeded ? null : tab === 'day' ? (
+        {!seeded ? null : tab === 'day' && !settingsView && !periodOpen ? (
           <>
             <aside className="flex w-[280px] shrink-0 flex-col border-r border-line">
               <div className="min-h-0 flex-1 overflow-hidden">

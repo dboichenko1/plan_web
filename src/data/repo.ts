@@ -175,6 +175,15 @@ export function stateOf(task: TaskRow, today: DateStr) {
   return taskState(task, today)
 }
 
+/** Очистить инбокс: мягко удалить все открытые задачи без дня. */
+export async function deleteAllInboxTasks(userId: string): Promise<number> {
+  const rows = await db.tasks
+    .filter((t) => t.user_id === userId && t.scheduled_on === null && !t.deleted_at && t.status === 'open')
+    .toArray()
+  for (const t of rows) await softDeleteTask(t.id)
+  return rows.length
+}
+
 export async function createTag(userId: string, name: string): Promise<string> {
   const existing = await db.tags
     .filter((t) => t.user_id === userId && t.name.toLowerCase() === name.toLowerCase())

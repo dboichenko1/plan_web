@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
 import type { CategoryRow, TaskRow } from '../data/contract'
-import { moveTaskToDay, softDeleteTask } from '../data/repo'
+import { deleteAllInboxTasks, moveTaskToDay, softDeleteTask } from '../data/repo'
 import { taskState } from '../domain/state'
 import { effectiveUrgency } from '../domain/urgency'
 import type { DateStr } from '../domain/types'
@@ -34,6 +34,7 @@ export function InboxScreen({
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<TaskFilter>(EMPTY_FILTER)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [clearArmed, setClearArmed] = useState(false)
   const tasks = useLive(
     () =>
       db.tasks
@@ -140,6 +141,26 @@ export function InboxScreen({
           <p className="mt-2.5 font-mono text-[10px] text-text-quiet">
             свайп вправо — на сегодня · влево — удалить · долгое нажатие — перетащить
           </p>
+        )}
+        {total > 0 && !compact && (
+          <button
+            type="button"
+            onClick={() => {
+              if (!clearArmed) {
+                setClearArmed(true)
+                setTimeout(() => setClearArmed(false), 3000)
+                return
+              }
+              setClearArmed(false)
+              void deleteAllInboxTasks(userId)
+            }}
+            className="mt-4 text-13"
+            style={{ color: clearArmed ? 'var(--accent-alt)' : 'var(--text-quiet)' }}
+          >
+            {clearArmed
+              ? `Точно удалить все ${total} ${plural(total, 'задачу', 'задачи', 'задач')} из инбокса`
+              : 'Удалить все задачи из инбокса'}
+          </button>
         )}
       </div>
     </div>

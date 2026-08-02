@@ -109,6 +109,8 @@ export function SettingsScreen({
           if (!title) continue
           const notes = item['notes']
           const due = item['due'] // RFC3339 — календарная дата в первых 10 символах
+          const dueOn =
+            typeof due === 'string' && /^\d{4}-\d{2}-\d{2}/.test(due) ? due.slice(0, 10) : null
           const task = await createTask(
             {
               user_id: userId,
@@ -116,8 +118,9 @@ export function SettingsScreen({
               note: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
               importance: 2,
               urgency_manual: 1,
-              due_on: typeof due === 'string' && /^\d{4}-\d{2}-\d{2}/.test(due) ? due.slice(0, 10) : null,
-              scheduled_on: null, // открытые задачи едут в инбокс
+              due_on: dueOn,
+              // Срок в будущем — сразу в план на этот день; остальное в инбокс.
+              scheduled_on: dueOn && dueOn >= today ? dueOn : null,
             },
             today,
           )

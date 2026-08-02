@@ -142,7 +142,7 @@ export function CreateTaskSheet({
 
   const scheduledCaption =
     scheduledOn === null
-      ? 'в инбокс'
+      ? 'без дня'
       : scheduledOn === today
         ? 'в план на сегодня'
         : scheduledOn === addDays(today, 1)

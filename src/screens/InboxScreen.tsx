@@ -70,9 +70,9 @@ export function InboxScreen({
     <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="shrink-0 px-3 pt-1.5">
         <div className="flex items-baseline justify-between">
-          <h1 className="font-tile text-24 font-semibold text-text">Инбокс</h1>
+          <h1 className="font-tile text-24 font-semibold text-text">Без даты</h1>
           <span className="font-mono text-11 text-text-quiet">
-            {total} {plural(total, 'задача', 'задачи', 'задач')} без даты
+            {total} {plural(total, 'задача', 'задачи', 'задач')}
           </span>
         </div>
         {!compact && (
@@ -130,7 +130,7 @@ export function InboxScreen({
         {list.length === 0 && (
           <div className="pt-24 text-center">
             <p className="text-15 text-text-muted">
-              {query ? 'Ничего не нашлось.' : 'Инбокс пуст.'}
+              {query ? 'Ничего не нашлось.' : 'Здесь пусто.'}
             </p>
             <p className="mt-1 text-13 text-text-quiet">
               {query ? 'Попробуйте другое слово.' : 'Всё разложено по дням.'}
@@ -158,8 +158,8 @@ export function InboxScreen({
             style={{ color: clearArmed ? 'var(--accent-alt)' : 'var(--text-quiet)' }}
           >
             {clearArmed
-              ? `Точно удалить все ${total} ${plural(total, 'задачу', 'задачи', 'задач')} из инбокса`
-              : 'Удалить все задачи из инбокса'}
+              ? `Точно удалить все ${total} ${plural(total, 'задачу', 'задачи', 'задач')} задач без даты`
+              : 'Удалить все задачи без даты'}
           </button>
         )}
       </div>

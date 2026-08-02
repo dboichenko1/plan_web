@@ -288,7 +288,7 @@ function EmptyCard() {
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
       <p className="text-15 text-text-muted">Задача не выбрана.</p>
       <p className="mt-1 text-13 text-text-quiet">
-        Нажмите плитку на борде или строку в инбоксе.
+        Нажмите плитку на борде или строку в списке без даты.
       </p>
     </div>
   )

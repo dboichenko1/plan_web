@@ -196,7 +196,7 @@ export function TaskCardSheet({
     st === 'live'
       ? [
           { label: 'Перенести на завтра', onClick: moveOrAsk(addDays(today, 1)) },
-          { label: 'Убрать в инбокс', onClick: run(() => moveTaskToDay(taskId, null, today)) },
+          { label: 'Убрать из плана', onClick: run(() => moveTaskToDay(taskId, null, today)) },
         ]
       : st === 'done'
         ? []

@@ -216,7 +216,7 @@ export function DayScreen({
                 </button>
               )}
               <HeaderButton
-                label="Инбокс"
+                label="Задачи без даты"
                 onClick={() => {
                   setInboxThird(false)
                   onToggleInbox()
@@ -527,7 +527,7 @@ function EmptyDay() {
     <div className="pt-24 text-center">
       <p className="text-15 text-text-muted">На сегодня пусто.</p>
       <p className="mt-1 text-13 text-text-quiet">
-        Перетащите задачу из инбокса или добавьте новую.
+        Добавьте задачу или перетащите из «Без даты».
       </p>
     </div>
   )

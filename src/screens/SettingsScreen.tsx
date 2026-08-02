@@ -171,7 +171,7 @@ export function SettingsScreen({
       setImportResult(
         rows.length === 0
           ? 'В файле не нашлось задач'
-          : `Перенесено ${rows.length}: ${toDays} по дням, ${toInbox} в инбокс, ${doneCount} выполненных в историю`,
+          : `Перенесено ${rows.length}: ${toDays} по дням, ${toInbox} без даты, ${doneCount} выполненных в историю`,
       )
     } catch {
       setImportResult('Не получилось разобрать файл — нужен Tasks.json из выгрузки Takeout')

@@ -25,6 +25,8 @@ export function LoginScreen() {
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [code, setCode] = useState('')
+  const [codeState, setCodeState] = useState<'idle' | 'checking' | 'error'>('idle')
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -32,14 +34,33 @@ export function LoginScreen() {
     setState('sending')
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
+      // На GitHub Pages приложение живёт на подпути — origin недостаточно.
+      options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
     })
     if (err) {
-      setError('Не удалось отправить ссылку. Проверьте адрес и попробуйте ещё раз.')
+      setError(
+        err.code === 'over_email_send_rate_limit'
+          ? 'Почта отправляет максимум два письма в час — лимит исчерпан. Подождите час или войдите по коду из прежнего письма.'
+          : 'Не удалось отправить ссылку. Проверьте адрес и попробуйте ещё раз.',
+      )
       setState('error')
     } else {
       setState('sent')
     }
+  }
+
+  // Вход по коду из письма: на iPhone ссылка открывается в Safari, а у
+  // приложения с домашнего экрана хранилище своё — код решает это.
+  async function verifyCode() {
+    if (!supabase || code.trim().length < 6) return
+    setCodeState('checking')
+    const { error: err } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: 'email',
+    })
+    if (err) setCodeState('error')
+    // при успехе сессию подхватит onAuthStateChange — экран сменится сам
   }
 
   return (
@@ -76,9 +97,35 @@ export function LoginScreen() {
               VITE_SUPABASE_PUBLISHABLE_KEY в .env и пересоберите.
             </p>
           ) : state === 'sent' ? (
-            <p className="text-15 text-text">
-              Ссылка отправлена на {email.trim()}. Откройте письмо на этом устройстве.
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-15 text-text">
+                Письмо ушло на {email.trim()}. Откройте ссылку на этом устройстве —
+                или введите код из письма:
+              </p>
+              <div className="flex gap-1">
+                <input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Код из письма"
+                  className="h-12 min-w-0 flex-1 rounded-tile border border-line bg-surface px-3.5 font-mono text-15 text-text placeholder:font-ui placeholder:text-text-quiet focus:border-accent focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void verifyCode()}
+                  disabled={codeState === 'checking' || code.trim().length < 6}
+                  className="h-12 shrink-0 rounded-tile bg-text px-4 text-15 font-medium text-bg disabled:opacity-60"
+                >
+                  {codeState === 'checking' ? 'Проверяем…' : 'Войти'}
+                </button>
+              </div>
+              {codeState === 'error' && (
+                <p className="text-11 text-text-quiet">
+                  Код не подошёл. Проверьте цифры или запросите новое письмо.
+                </p>
+              )}
+            </div>
           ) : (
             <>
               <input

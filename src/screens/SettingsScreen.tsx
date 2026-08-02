@@ -4,10 +4,11 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
+import type { TaskRow } from '../data/contract'
 import { useLive } from '../data/hooks'
 import { supabase } from '../data/supabase'
 import { pullSince, useSyncStatus, type SyncStatus, retryFailedOutbox, discardFailedOutbox } from '../data/sync'
-import { createTask, updateTask } from '../data/repo'
+import { bulkInsertTasks, softDeleteTask } from '../data/repo'
 import { deleteTag, exportJson, updateCategory, updateProfile } from '../data/profile'
 import { demoMode } from '../app/session'
 import { useTheme } from '../app/theme'
@@ -87,8 +88,10 @@ export function SettingsScreen({
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<string | null>(null)
 
-  // Tasks.json из Takeout: {items:[{title, items:[{title, notes, due, status, updated}]}]}.
-  // Парсим мягко: незнакомые поля игнорируем, записи без заголовка пропускаем.
+  // Tasks.json из Google Takeout. Реальный формат: items[].items[] с полями
+  // title, status (needsAction|completed), created/updated/completed (ISO),
+  // scheduled_time: [{start: ISO}], starred, notes, task_recurrence_id.
+  // Парсим мягко: незнакомое игнорируем, записи без заголовка пропускаем.
   async function importTakeout(file: File): Promise<void> {
     setImporting(true)
     setImportResult(null)
@@ -99,7 +102,19 @@ export function SettingsScreen({
         setImportResult('В файле нет списков задач — нужен Tasks.json из выгрузки Takeout')
         return
       }
-      let moved = 0
+
+      // Повторный импорт заменяет прошлый: мягко удаляем задачи без дня и без
+      // шаблона — и открытые, и выполненные (свои живут на бордах с датой).
+      const stale = await db.tasks
+        .filter((t) => t.user_id === userId && t.scheduled_on === null && t.template_id === null && !t.deleted_at)
+        .toArray()
+      for (const t of stale) await softDeleteTask(t.id)
+
+      const nowTs = new Date().toISOString()
+      const rows: TaskRow[] = []
+      let toDays = 0
+      let toInbox = 0
+      let doneCount = 0
       for (const list of lists) {
         const items = (list as { items?: unknown }).items
         if (!Array.isArray(items)) continue
@@ -107,40 +122,64 @@ export function SettingsScreen({
           const item = raw as Record<string, unknown>
           const title = typeof item['title'] === 'string' ? item['title'].trim() : ''
           if (!title) continue
+
+          const sched = item['scheduled_time']
+          const start =
+            Array.isArray(sched) && sched.length > 0
+              ? (sched[0] as Record<string, unknown>)['start']
+              : null
+          const date =
+            typeof start === 'string' && /^\d{4}-\d{2}-\d{2}/.test(start) ? start.slice(0, 10) : null
+          const timeRaw = typeof start === 'string' ? start.slice(11, 16) : ''
+          const time = date && timeRaw && timeRaw !== '00:00' ? timeRaw : null
+
           const notes = item['notes']
-          const due = item['due'] // RFC3339 — календарная дата в первых 10 символах
-          const dueOn =
-            typeof due === 'string' && /^\d{4}-\d{2}-\d{2}/.test(due) ? due.slice(0, 10) : null
-          const task = await createTask(
-            {
-              user_id: userId,
-              title,
-              note: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
-              importance: 2,
-              urgency_manual: 1,
-              due_on: dueOn,
-              // Срок в будущем — сразу в план на этот день; остальное в инбокс.
-              scheduled_on: dueOn && dueOn >= today ? dueOn : null,
-            },
-            today,
-          )
-          if (item['status'] === 'completed') {
-            const updated = item['updated']
-            await updateTask(task.id, {
-              status: 'done',
-              completed_at: typeof updated === 'string' ? updated : new Date().toISOString(),
-            })
-          }
-          moved++
+          const created = typeof item['created'] === 'string' ? item['created'] : nowTs
+          const done = item['status'] === 'completed'
+          const completed = typeof item['completed'] === 'string' ? item['completed'] : null
+
+          rows.push({
+            id: crypto.randomUUID(),
+            user_id: userId,
+            title: title.slice(0, 200),
+            note: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
+            importance: item['starred'] ? 3 : 2,
+            urgency_manual: 1,
+            // Срок и план — из даты выгрузки: борд и цвета оживают сразу.
+            due_on: done ? null : date,
+            due_time: done ? null : time,
+            remind_before: [],
+            scheduled_on: date ?? (done && completed ? completed.slice(0, 10) : null),
+            category_id: null,
+            template_id: null,
+            occurrence_on: null,
+            order_index: rows.length,
+            status: done ? 'done' : 'open',
+            completed_at: done ? (completed ?? created) : null,
+            urgency_at_completion: null,
+            created_at: created,
+            updated_at: nowTs,
+            deleted_at: null,
+          })
+          if (done) doneCount++
+          else if (date) toDays++
+          else toInbox++
         }
       }
-      setImportResult(`Перенесено ${moved} ${plural(moved, 'задача', 'задачи', 'задач')}`)
+
+      await bulkInsertTasks(rows)
+      setImportResult(
+        rows.length === 0
+          ? 'В файле не нашлось задач'
+          : `Перенесено ${rows.length}: ${toDays} по дням, ${toInbox} в инбокс, ${doneCount} выполненных в историю`,
+      )
     } catch {
-      setImportResult('Не получилось прочитать файл — это не JSON из Takeout')
+      setImportResult('Не получилось разобрать файл — нужен Tasks.json из выгрузки Takeout')
     } finally {
       setImporting(false)
     }
   }
+
 
   return (
     <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>

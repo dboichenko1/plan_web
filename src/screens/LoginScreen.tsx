@@ -64,7 +64,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-bg">
+    <div className="relative flex h-full flex-col overflow-hidden bg-bg">
       <div
         className="pointer-events-none absolute inset-0 grid gap-1 p-3 opacity-[0.17]"
         style={{ gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: '89px' }}

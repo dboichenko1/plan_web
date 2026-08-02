@@ -175,6 +175,30 @@ export function stateOf(task: TaskRow, today: DateStr) {
   return taskState(task, today)
 }
 
+/**
+ * Пакетная вставка задач (импорт): Dexie одним заходом, outbox чанками по 200 —
+ * иначе первый обмен превратится в тысячи запросов. created_at сохраняем:
+ * без него статистика срока дожития по импортированному вранья не простит.
+ */
+export async function bulkInsertTasks(rows: TaskRow[]): Promise<void> {
+  await db.tasks.bulkPut(rows)
+  for (let i = 0; i < rows.length; i += 200) {
+    const chunk = rows.slice(i, i + 200).map(({ updated_at, ...rest }) => {
+      void updated_at
+      return rest as Record<string, unknown>
+    })
+    await db.outbox.add({
+      entity: 'tasks',
+      entity_id: `bulk:${crypto.randomUUID()}`,
+      op: 'upsert',
+      payload: chunk,
+      created_at: nowIso(),
+      tries: 0,
+    })
+  }
+  pokeSync()
+}
+
 /** Очистить инбокс: мягко удалить все открытые задачи без дня. */
 export async function deleteAllInboxTasks(userId: string): Promise<number> {
   const rows = await db.tasks

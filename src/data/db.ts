@@ -26,7 +26,7 @@ export type OutboxRow = {
   entity: OutboxEntity
   entity_id: string
   op: 'upsert' | 'delete'
-  payload: Record<string, unknown>
+  payload: Record<string, unknown> | Record<string, unknown>[]
   created_at: string
   tries: number
   last_error?: string

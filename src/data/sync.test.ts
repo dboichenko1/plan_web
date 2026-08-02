@@ -115,7 +115,7 @@ describe('sync', () => {
     expect(rows[0]!.entity).toBe('tasks')
     expect(rows[0]!.entity_id).toBe(task.id)
     expect(rows[0]!.op).toBe('upsert')
-    expect(rows[0]!.payload['title']).toBe('Купить хлеб')
+    expect((rows[0]!.payload as Record<string, unknown>)['title']).toBe('Купить хлеб')
   })
 
   it('pushOutbox удаляет запись после успешного upsert и шлёт по порядку', async () => {

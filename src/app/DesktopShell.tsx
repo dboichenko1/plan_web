@@ -139,7 +139,7 @@ export function DesktopShell({ userId }: { userId: string }) {
   })()
 
   return (
-    <div className="flex h-dvh flex-col bg-bg">
+    <div className="flex h-full flex-col bg-bg">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-line px-4">
         <h1 className="font-tile text-18 font-semibold text-text">{title}</h1>
         <div className="flex items-center gap-3">

@@ -34,7 +34,7 @@ function Gate() {
   const { session, loading } = useSession()
   const isDesktop = useIsDesktop()
 
-  if (loading) return <div className="h-dvh bg-bg" />
+  if (loading) return <div className="h-full bg-bg" />
   if (!session && !demoMode) return <LoginScreen />
   // От 1100px — раскладка мака; мобильная оболочка ниже не меняется.
   if (isDesktop) return <DesktopShell userId={currentUserId(session)} />
@@ -158,7 +158,7 @@ function Shell({ userId }: { userId: string }) {
   })()
 
   return (
-    <div className="flex h-dvh flex-col bg-bg">
+    <div className="flex h-full flex-col bg-bg">
       <main className="relative min-h-0 flex-1">{content}</main>
       <TabBar
         active={tab}

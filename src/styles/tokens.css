@@ -213,8 +213,16 @@
 
 html,
 body {
-  height: 100dvh;
+  height: 100%;
   overscroll-behavior: none;
+}
+
+/* iOS по-разному считает dvh в standalone и в Safari с прячущейся панелью —
+   фиксированный корень надёжно заполняет весь экран. */
+#root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
 
 body {

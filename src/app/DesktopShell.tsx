@@ -4,7 +4,7 @@
 // задачи. Месяц/неделя/статистика — без боковых панелей, по центру до 1100px.
 
 import { useEffect, useState } from 'react'
-import { db } from '../data/db'
+import { db, requestPersistentStorage } from '../data/db'
 import { useLive } from '../data/hooks'
 import { seedDemo } from '../data/demoSeed'
 import { startSync } from '../data/sync'
@@ -66,6 +66,7 @@ export function DesktopShell({ userId }: { userId: string }) {
   useEffect(() => startSync(userId), [userId])
   useEffect(() => {
     void registerSW()
+    requestPersistentStorage()
   }, [])
 
   // Свёрнутые «Висят» в шапке — те же задачи, что и полоса внутри экрана дня.

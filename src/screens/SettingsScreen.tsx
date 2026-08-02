@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
 import { supabase } from '../data/supabase'
-import { pullSince, useSyncStatus, type SyncStatus } from '../data/sync'
+import { pullSince, useSyncStatus, type SyncStatus, retryFailedOutbox, discardFailedOutbox } from '../data/sync'
 import { createTask, updateTask } from '../data/repo'
 import { deleteTag, exportJson, updateCategory, updateProfile } from '../data/profile'
 import { demoMode } from '../app/session'
@@ -162,14 +162,33 @@ export function SettingsScreen({
           </Row>
 
           <Row title="Синхронизация" caption={syncCaption(sync)}>
-            <button
-              type="button"
-              disabled={demoMode || !supabase}
-              onClick={() => void pullSince(userId)}
-              className={`${BTN_COMPACT} ${demoMode || !supabase ? 'text-text-quiet' : 'text-text'}`}
-            >
-              Обновить
-            </button>
+            {sync.failed > 0 ? (
+              <span className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => void retryFailedOutbox()}
+                  className={`${BTN_COMPACT} text-text`}
+                >
+                  Повторить
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void discardFailedOutbox()}
+                  className={`${BTN_COMPACT} text-text-muted`}
+                >
+                  Выбросить
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={demoMode || !supabase}
+                onClick={() => void pullSince(userId)}
+                className={`${BTN_COMPACT} ${demoMode || !supabase ? 'text-text-quiet' : 'text-text'}`}
+              >
+                Обновить
+              </button>
+            )}
           </Row>
 
           <Row

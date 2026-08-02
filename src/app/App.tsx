@@ -15,7 +15,7 @@ import { StatsScreen } from '../screens/stats/StatsScreen'
 import { NotificationsSettings } from '../screens/NotificationsSettings'
 import { ThemeScreen } from '../screens/ThemeScreen'
 import { TabBar, type Tab } from '../ui/TabBar'
-import { db } from '../data/db'
+import { db, requestPersistentStorage } from '../data/db'
 import { useLive } from '../data/hooks'
 import { seedDemo } from '../data/demoSeed'
 import { startSync } from '../data/sync'
@@ -84,6 +84,7 @@ function Shell({ userId }: { userId: string }) {
   useEffect(() => startSync(userId), [userId])
   useEffect(() => {
     void registerSW()
+    requestPersistentStorage()
   }, [])
 
   const openDay = (d: string) => {

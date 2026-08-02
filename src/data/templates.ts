@@ -94,6 +94,18 @@ export async function createTemplate(input: NewTemplate, userId: string, today: 
 }
 
 /**
+ * Тот же uuid, что public.task_instance_id на сервере: первые 16 байт
+ * sha-256 от 'template_id:occurrence_on'.
+ */
+async function instanceId(templateId: string, occurrenceOn: DateStr): Promise<string> {
+  const bytes = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${templateId}:${occurrenceOn}`)),
+  )
+  const hex = Array.from(bytes.slice(0, 16), (b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/**
  * Создать недостающие экземпляры с max(starts_on, materialized_through+1)
  * по today+60 и подвинуть materialized_through. Повторный вызов — no-op:
  * существующие пары (template_id, occurrence_on) не дублируются.
@@ -113,7 +125,9 @@ export async function materializeTemplate(templateId: string, today: DateStr): P
     if (taken.has(day)) continue
     const ts = nowIso()
     const task: TaskRow = {
-      id: crypto.randomUUID(),
+      // id детерминированный из (template_id, occurrence_on): ночной крон,
+      // материализуя независимо, придёт к той же строке — upsert сходится.
+      id: await instanceId(tpl.id, day),
       user_id: tpl.user_id,
       title: tpl.title,
       note: tpl.note,

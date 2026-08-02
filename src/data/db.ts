@@ -66,3 +66,11 @@ export class PlannerDb extends Dexie {
 }
 
 export const db = new PlannerDb()
+
+/**
+ * Просим браузер не выселять IndexedDB (ТЗ §8): в кеше лежит и outbox
+ * с несинхронизированными офлайн-правками. Сервер всё равно источник истины.
+ */
+export function requestPersistentStorage(): void {
+  void navigator.storage?.persist?.()
+}

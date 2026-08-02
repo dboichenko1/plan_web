@@ -171,10 +171,27 @@ export async function pushOutbox(): Promise<void> {
 /**
  * Ключи неотправленных правок: '<entity>:<entity_id>'. Для task_tags
  * entity_id — 'task_id:tag_id' (композитный ключ), repo обязан класть так же.
+ * Застрявшие записи (tries >= MAX_TRIES) не в счёт: они не должны вечно
+ * блокировать приём серверной версии — их судьбу решают в настройках.
  */
 async function pendingOutboxKeys(): Promise<Set<string>> {
   const rows = await activeDb.outbox.toArray()
-  return new Set(rows.map((r) => `${r.entity}:${r.entity_id}`))
+  return new Set(rows.filter((r) => r.tries < MAX_TRIES).map((r) => `${r.entity}:${r.entity_id}`))
+}
+
+/** Повторить застрявшие записи outbox: сбросить счётчик и толкнуть отправку. */
+export async function retryFailedOutbox(): Promise<void> {
+  const rows = await activeDb.outbox.filter((r) => r.tries >= MAX_TRIES).toArray()
+  await Promise.all(rows.map((r) => activeDb.outbox.update(r.id!, { tries: 0 })))
+  await refresh('idle')
+  void pushOutbox()
+}
+
+/** Выбросить застрявшие записи: серверная версия победила. */
+export async function discardFailedOutbox(): Promise<void> {
+  const rows = await activeDb.outbox.filter((r) => r.tries >= MAX_TRIES).toArray()
+  await activeDb.outbox.bulkDelete(rows.map((r) => r.id!))
+  await refresh('idle')
 }
 
 function pendingKey(entity: OutboxEntity, row: Record<string, unknown>): string {
@@ -208,6 +225,17 @@ async function applyServerRow(
       await activeDb.task_tags.put(row as unknown as TaskTagRow)
       break
   }
+}
+
+/** Полная замена tags серверным набором; неотправленные локальные — выживают. */
+async function applyTagsFull(rows: TagRow[], pending: Set<string>): Promise<void> {
+  await activeDb.transaction('rw', activeDb.tags, async () => {
+    const local = await activeDb.tags.toArray()
+    const keep = local.filter((r) => pending.has(`tags:${r.id}`))
+    const fresh = rows.filter((r) => !pending.has(`tags:${r.id}`))
+    await activeDb.tags.clear()
+    await activeDb.tags.bulkPut([...fresh, ...keep])
+  })
 }
 
 /** Полная замена task_tags серверным набором; неотправленные локальные — выживают. */
@@ -259,8 +287,14 @@ export async function pullSince(userId: string): Promise<void> {
       }
     }
 
-    // task_tags без updated_at: целиком при первом pull, дальше догоняет Realtime
-    if (last === null) {
+    // task_tags без updated_at, а жёсткие удаления tags/task_tags Realtime может
+    // проспать (офлайн): сверяем оба набора целиком при каждом приёме — таблицы
+    // маленькие, а расхождение иначе вечное.
+    {
+      const tagsFull = await client.from('tags').select('*')
+      if (tagsFull.error) throw new Error(tagsFull.error.message)
+      await applyTagsFull((tagsFull.data ?? []) as TagRow[], pending)
+
       const { data, error } = await client.from('task_tags').select('*')
       if (error) throw new Error(error.message)
       await applyTaskTagsFull((data ?? []) as TaskTagRow[], pending)
@@ -318,7 +352,13 @@ async function handleRealtime(
   userId: string,
 ): Promise<void> {
   if (payload.eventType === 'DELETE') {
-    await deleteLocal(entity, payload.old as Record<string, unknown>)
+    // Правило конфликтов одно на всё (ТЗ §7): строка с неотправленной правкой
+    // не затирается — и не удаляется тоже.
+    const pending = await pendingOutboxKeys()
+    const old = payload.old as Record<string, unknown>
+    if (!pending.has(pendingKey(entity, old))) {
+      await deleteLocal(entity, old)
+    }
   } else {
     const pending = await pendingOutboxKeys()
     await applyServerRow(entity, payload.new as Record<string, unknown>, pending)
@@ -369,7 +409,11 @@ export function startSync(userId: string): () => void {
       },
     )
   }
-  channel.subscribe()
+  channel.subscribe((status) => {
+    // Молчащий канал неотличим от рабочего — падение фиксируем в статусе,
+    // приём всё равно догонит по visibilitychange.
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') void refresh('error')
+  })
 
   void pullSince(userId)
 

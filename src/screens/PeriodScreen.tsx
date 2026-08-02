@@ -13,6 +13,7 @@ import { taskState } from '../domain/state'
 import { effectiveUrgency } from '../domain/urgency'
 import type { DateStr } from '../domain/types'
 import { tileFill } from '../ui/Tile'
+import { DateField as RuDateField } from '../ui/DateField'
 import { plural, weekdayShort } from '../ui/format'
 
 /** Жёсткий потолок диапазона: длиннее не рисуем, честно предупреждаем. */
@@ -208,14 +209,12 @@ function DateField({
   return (
     <label className="flex h-11 flex-1 flex-col justify-center rounded-tile border border-line bg-surface px-3 focus-within:border-accent">
       <span className="text-11 leading-none text-text-quiet">{label}</span>
-      <input
-        type="date"
+      <RuDateField
         value={value}
-        onChange={(e) => {
-          // Пустая строка приходит при очистке поля — прежний диапазон не трогаем.
-          if (e.target.value) onChange(e.target.value)
+        onChange={(v) => {
+          if (v) onChange(v)
         }}
-        className="block w-full appearance-none border-none bg-transparent p-0 font-mono text-13 text-text outline-none"
+        className="text-13 text-text"
       />
     </label>
   )

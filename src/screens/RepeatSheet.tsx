@@ -7,6 +7,7 @@ import { isoWeekday } from '../domain/date'
 import type { DateStr } from '../domain/types'
 import { describeRule } from '../data/templates'
 import { Sheet } from '../ui/Sheet'
+import { DateField } from '../ui/DateField'
 import { WEEKDAYS_SHORT, plural } from '../ui/format'
 
 type Freq = Rule['freq']
@@ -218,13 +219,12 @@ export function RepeatSheet({
               <EndsRow label="Никогда" on={endsMode === 'never'} onSelect={() => setEndsMode('never')} />
               <EndsRow label="До даты" on={endsMode === 'on'} onSelect={() => setEndsMode('on')}>
                 {endsMode === 'on' && (
-                  <input
-                    type="date"
-                    aria-label="Дата окончания"
+                  <DateField
                     value={endsOn}
+                    onChange={setEndsOn}
                     min={startsOn}
-                    onChange={(e) => setEndsOn(e.target.value)}
-                    className="h-[30px] rounded-tile border-0 bg-surface2 px-2.5 font-mono text-13 text-text outline-none"
+                    placeholder="дата"
+                    className="h-[30px] rounded-tile bg-surface2 px-2.5 text-13 text-text"
                   />
                 )}
               </EndsRow>

@@ -14,6 +14,7 @@ import type { Rule } from '../domain/recurrence'
 import type { DateStr, Importance, Urgency } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { Tile, type TileData } from '../ui/Tile'
+import { DateField } from '../ui/DateField'
 import { CategoryIcon, IconChevronRight, IconClose, IconPlus } from '../ui/icons'
 import { dateShort, plural, tileCaption, weekdayShort } from '../ui/format'
 import { RepeatSheet } from './RepeatSheet'
@@ -47,9 +48,12 @@ function remindChip(minutes: number): string {
   return REMIND_OPTIONS.find((o) => o.minutes === minutes)?.chip ?? `${minutes} мин`
 }
 
-// Ячейка превью уменьшена до 42px: 2×2 с зазором 4 даёт 88px.
+// Превью — полноразмерная плитка (ячейка 89), уменьшенная трансформацией:
+// типографика сжимается пропорционально и ведёт себя ровно как на борде.
 const CELL = 42
 const GAP = 4
+const FULL_CELL = 89
+const PREVIEW_SCALE = CELL / FULL_CELL
 
 const CHIP_INPUT =
   'h-[30px] rounded-tile border-0 bg-surface2 px-2.5 font-mono text-13 text-text outline-none'
@@ -233,14 +237,23 @@ export function CreateTaskSheet({
 
             {/* Живое превью: реальные пропорции TILE в уменьшенной ячейке. */}
             <div className="flex shrink-0 items-center gap-3.5" style={{ minHeight: CELL * 2 + GAP }}>
-              <Tile
-                tile={preview}
+              <div
+                className="shrink-0 overflow-hidden"
                 style={{
-                  width: size.w * CELL + (size.w - 1) * GAP,
-                  height: size.h * CELL + (size.h - 1) * GAP,
-                  flexShrink: 0,
+                  width: (size.w * FULL_CELL + (size.w - 1) * GAP) * PREVIEW_SCALE,
+                  height: (size.h * FULL_CELL + (size.h - 1) * GAP) * PREVIEW_SCALE,
                 }}
-              />
+              >
+                <Tile
+                  tile={preview}
+                  style={{
+                    width: size.w * FULL_CELL + (size.w - 1) * GAP,
+                    height: size.h * FULL_CELL + (size.h - 1) * GAP,
+                    transform: `scale(${PREVIEW_SCALE})`,
+                    transformOrigin: 'top left',
+                  }}
+                />
+              </div>
               <div className="font-mono text-11 text-text-quiet" style={{ lineHeight: 1.7 }}>
                 <div>
                   {IMPORTANCE_LABEL[importance].toLowerCase()} · {URGENCY_LABEL[effUrgency].toLowerCase()}
@@ -309,12 +322,11 @@ export function CreateTaskSheet({
               <div className="flex h-[42px] items-center justify-between border-b border-line">
                 <span className="text-15 text-text">Дата и время</span>
                 <span className="flex items-center gap-1">
-                  <input
-                    type="date"
-                    aria-label="Дата срока"
+                  <DateField
                     value={dueOn}
-                    onChange={(e) => setDueOn(e.target.value)}
-                    className={CHIP_INPUT}
+                    onChange={setDueOn}
+                    placeholder="дата"
+                    className={CHIP_INPUT + ' text-13'}
                   />
                   <input
                     type="time"
@@ -342,12 +354,11 @@ export function CreateTaskSheet({
                   {scheduledCaption && (
                     <span className="mr-1 text-13 text-text-quiet">{scheduledCaption}</span>
                   )}
-                  <input
-                    type="date"
-                    aria-label="День плана"
+                  <DateField
                     value={scheduledOn ?? ''}
-                    onChange={(e) => setScheduledOn(e.target.value || null)}
-                    className={CHIP_INPUT}
+                    onChange={(v) => setScheduledOn(v || null)}
+                    placeholder="день"
+                    className={CHIP_INPUT + ' text-13'}
                   />
                   {scheduledOn !== null && (
                     <button

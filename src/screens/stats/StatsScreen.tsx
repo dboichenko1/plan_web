@@ -8,6 +8,7 @@ import { periodFor, type Period } from '../../data/stats'
 import { addDays } from '../../domain/date'
 import type { DateStr } from '../../domain/types'
 import { IconSettings } from '../../ui/icons'
+import { DateField as RuDateField } from '../../ui/DateField'
 import { Overview } from './Overview'
 import { Rhythm } from './Rhythm'
 import { Categories } from './Categories'
@@ -128,14 +129,12 @@ function DateField({
   return (
     <label className="flex h-11 flex-1 flex-col justify-center rounded-tile border border-line bg-surface px-3 focus-within:border-accent">
       <span className="text-11 leading-none text-text-quiet">{label}</span>
-      <input
-        type="date"
+      <RuDateField
         value={value}
-        onChange={(e) => {
-          // Пустая строка приходит при очистке поля — прежний период не трогаем.
-          if (e.target.value) onChange(e.target.value)
+        onChange={(v) => {
+          if (v) onChange(v)
         }}
-        className="block w-full appearance-none border-none bg-transparent p-0 font-mono text-13 text-text outline-none"
+        className="text-13 text-text"
       />
     </label>
   )

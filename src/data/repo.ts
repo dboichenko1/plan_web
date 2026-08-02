@@ -1,5 +1,5 @@
 // Мутации: пишем в Dexie, кладём в outbox, UI обновляется сразу и никогда
-// не ждёт сети (ТЗ §7). Отправкой занимается sync.ts.
+// не ждёт сети. Отправкой занимается sync.ts.
 
 import { db, type OutboxEntity } from './db'
 import type { TaskRow } from './contract'
@@ -36,7 +36,7 @@ export type NewTask = {
   category_id?: string | null
 }
 
-/** order_index для вставки в день по естественному порядку (ТЗ §5.7). */
+/** order_index для вставки в день по естественному порядку. */
 async function orderIndexFor(task: Pick<TaskRow, 'user_id'>, day: DateStr | null, urgency: Urgency, importance: Importance, today: DateStr): Promise<number> {
   if (!day) return 0
   const dayTasks = (await db.tasks.where('scheduled_on').equals(day).toArray())
@@ -130,7 +130,7 @@ export async function softDeleteTask(id: string): Promise<void> {
   await updateTask(id, { deleted_at: nowIso() })
 }
 
-/** Перенос в день: обычное изменение scheduled_on (ТЗ §5.6), порядок — естественный. */
+/** Перенос в день: обычное изменение scheduled_on, порядок — естественный. */
 export async function moveTaskToDay(id: string, day: DateStr | null, today: DateStr): Promise<void> {
   const task = await db.tasks.get(id)
   if (!task) return
@@ -198,7 +198,7 @@ export async function unlinkTaskTag(taskId: string, tagId: string, userId: strin
 }
 
 /**
- * Перетаскивание задаёт позицию в списке, а не координаты ячейки (ТЗ §5.7).
+ * Перетаскивание задаёт позицию в списке, а не координаты ячейки.
  * index — куда встать среди открытых задач дня (без самой задачи).
  */
 export async function placeTaskInDay(id: string, day: DateStr, index: number, userId: string): Promise<void> {

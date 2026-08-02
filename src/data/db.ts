@@ -1,4 +1,4 @@
-// Локальное зеркало таблиц + outbox (ТЗ §7). UI читает и пишет только сюда;
+// Локальное зеркало таблиц + outbox. UI читает и пишет только сюда;
 // сеть догоняет в фоне. Сервер — источник истины, эта база — кеш.
 
 import Dexie, { type Table } from 'dexie'
@@ -68,7 +68,7 @@ export class PlannerDb extends Dexie {
 export const db = new PlannerDb()
 
 /**
- * Просим браузер не выселять IndexedDB (ТЗ §8): в кеше лежит и outbox
+ * Просим браузер не выселять IndexedDB: в кеше лежит и outbox
  * с несинхронизированными офлайн-правками. Сервер всё равно источник истины.
  */
 export function requestPersistentStorage(): void {

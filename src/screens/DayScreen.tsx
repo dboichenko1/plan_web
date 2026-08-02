@@ -56,7 +56,7 @@ export function DayScreen({
   onToggleInbox: () => void
   hangingOpen: boolean
   onToggleHanging: () => void
-  /** Колонок на борде: 4 на телефоне, 8 в раскладке мака (макет 21). Ячейка не растёт. */
+  /** Колонок на борде: 4 на телефоне, 8 в раскладке мака. Ячейка не растёт. */
   cols?: number
 }) {
   const tasks = useLive(

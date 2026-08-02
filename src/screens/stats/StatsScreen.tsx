@@ -1,4 +1,4 @@
-// Статистика (макеты 14–16): контейнер с селектором периода и под-вкладками
+// Статистика: контейнер с селектором периода и под-вкладками
 // обзор / ритм / категории. Контент под шапкой скроллится.
 
 import { useEffect, useState } from 'react'
@@ -166,7 +166,7 @@ export function useStat<T>(load: () => Promise<T>, deps: readonly unknown[]): T 
   return value
 }
 
-/** Цвет полос: var(--cat-N) по порядку sort_order (HANDOFF §2, только графики). */
+/** Цвет полос: var(--cat-N) по порядку sort_order (палитра только для графиков). */
 export function useCategoryColors(userId: string): Map<string, string> {
   const categories = useLive(() => db.categories.orderBy('sort_order').toArray(), [userId])
   const map = new Map<string, string>()

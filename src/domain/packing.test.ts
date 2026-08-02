@@ -52,7 +52,7 @@ describe('packDay', () => {
     expect(snapshot([2, 3, 1])).toEqual(['AABB', 'C.BB'])
   })
 
-  it('пример из ТЗ: [4,3,1,1,2]', () => {
+  it('канонический пример: [4,3,1,1,2]', () => {
     expect(snapshot([4, 3, 1, 1, 2])).toEqual(['AAAA', 'AAAA', 'BBCD', 'BBEE'])
   })
 

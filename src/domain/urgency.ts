@@ -2,7 +2,7 @@ import type { DateStr, TaskLike, Urgency } from './types'
 import { daysBetween } from './date'
 
 /**
- * Срочность по близости дедлайна (ТЗ §5.3); без due_on действует ручная.
+ * Срочность по близости дедлайна; без due_on действует ручная.
  * ≤0 дней — 4 (горит), ≤3 — 3 (скоро), ≤7 — 2 (на неделе), дальше — 1.
  */
 export function effectiveUrgency(

@@ -40,7 +40,7 @@ export type Theme = {
 
   accent: string
   accentAlt: string
-  /** Затемнение под шторками; задан макетами, чекер его не проверяет. */
+  /** Затемнение под шторками; чекер это поле не проверяет. */
   scrim: string
   categoryChart: string[]
 }

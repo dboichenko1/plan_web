@@ -1,5 +1,5 @@
-// Демо-набор для разработки без Supabase (VITE_DEMO=1): день как на макете 03,
-// четыре висящих задачи как на макете 04, инбокс как на макете 06.
+// Демо-набор для разработки без Supabase (VITE_DEMO=1): наполненный день,
+// висящие задачи и инбокс.
 
 import { db } from './db'
 import type { CategoryRow, TaskRow } from './contract'
@@ -78,7 +78,7 @@ export async function seedDemo(today: DateStr): Promise<void> {
   const cat = (icon: string) => `cat-${icon}`
 
   await db.tasks.bulkPut([
-    // Борд дня — как на макете 03
+    // Борд дня
     task('Сдать отчёт по проекту', 4, { due_on: today, due_time: '18:00', category_id: cat('work') }),
     task('Записаться к стоматологу', 3, { due_on: addDays(today, 1), category_id: cat('health') }),
     task('Вынести мусор', 2, { due_on: today, category_id: cat('chores') }),
@@ -99,7 +99,7 @@ export async function seedDemo(today: DateStr): Promise<void> {
       urgency_at_completion: 3,
       category_id: cat('chores'),
     }),
-    // Висят — как на макете 04
+    // Висят
     task('Оплатить страховку машины', 3, {
       scheduled_on: addDays(today, -9),
       due_on: addDays(today, -2),

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { supabase, supabaseConfigured } from '../data/supabase'
 
-// Фон — тихая композиция из плиток четырёх цветов (макет 02): экран за секунду
+// Фон — тихая композиция из плиток четырёх цветов: экран за секунду
 // объясняет, как выглядит продукт.
 const BACKDROP: { span?: number; rows?: number; u: 1 | 2 | 3 | 4 }[] = [
   { span: 4, rows: 2, u: 4 },

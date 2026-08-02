@@ -1,4 +1,4 @@
-// Плитка — единственный объект интерфейса. Содержимое по анатомии из брифа:
+// Плитка — единственный объект интерфейса. Анатомия:
 // сверху значок категории (и кольцо повтора), справа индикатор срочности,
 // снизу заголовок и вторая строка (только на 2×2 и 4×2).
 
@@ -47,7 +47,7 @@ export function Tile({ tile, style }: { tile: TileData; style?: CSSProperties })
   const expired = tile.state === 'expired'
   const gray = tile.state === 'slipped' || expired
   const color = tileTextColor(tile)
-  // «Срок · категория» — только на 2×2 и 4×2; «N дней висит» — и на 2×1 (макет 04).
+  // «Срок · категория» — только на 2×2 и 4×2; «N дней висит» — и на 2×1.
   const showCaption = gray ? tile.importance >= 2 : tile.importance >= 3
   const caption = gray
     ? tile.hangingDays > 0

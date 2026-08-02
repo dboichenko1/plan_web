@@ -36,7 +36,7 @@ function Gate() {
 
   if (loading) return <div className="h-dvh bg-bg" />
   if (!session && !demoMode) return <LoginScreen />
-  // От 1100px — раскладка мака (макет 21); мобильная оболочка ниже не меняется.
+  // От 1100px — раскладка мака; мобильная оболочка ниже не меняется.
   if (isDesktop) return <DesktopShell userId={currentUserId(session)} />
   return <Shell userId={currentUserId(session)} />
 }

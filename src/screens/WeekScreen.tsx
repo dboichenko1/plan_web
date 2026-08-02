@@ -16,7 +16,7 @@ import { toTileData } from '../ui/taskTile'
 import { dateShort, weekdayShort } from '../ui/format'
 import { CategoryIcon, IconChevronLeft, IconChevronRight } from '../ui/icons'
 
-/** Зазор между мини-плитками — по макету 2px, вдвое меньше зазора борда дня. */
+/** Зазор между мини-плитками — по дизайну px, вдвое меньше зазора борда дня. */
 const MINI_GAP = 2
 
 export function WeekScreen({

@@ -1,6 +1,6 @@
 // Настройки профиля и словари (категории, теги, подписки на пуши):
 // та же схема, что в repo.ts — пишем в Dexie, кладём в outbox, UI обновляется
-// сразу, сеть догоняет в фоне (ТЗ §7).
+// сразу, сеть догоняет в фоне.
 
 import { db, type OutboxEntity } from './db'
 import type { CategoryRow, ProfileRow } from './contract'

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 // Сегодняшняя календарная дата в поясе пользователя. Пересчёт — таймер до
 // ближайшей полуночи плюс visibilitychange: телефон почти всегда возвращается
-// из фона, а не работает всю ночь (ТЗ §5.3).
+// из фона, а не работает всю ночь.
 
 export function todayIn(timeZone: string): string {
   // en-CA даёт ровно YYYY-MM-DD

@@ -1,4 +1,4 @@
-// Карточка задачи — плитка, развёрнутая на весь экран (макет 09).
+// Карточка задачи — плитка, развёрнутая на весь экран.
 // Фон и цвет текста берутся у состояния плитки, поэтому все приглушённые
 // плашки (разделители, чипы, второстепенные кнопки) на живой карточке —
 // это color-mix от цвета текста, а не отдельный токен.
@@ -87,7 +87,7 @@ export function TaskCardSheet({
   taskId: string
   onClose: () => void
   today: DateStr
-  /** Правая панель раскладки мака (макет 21): обычный блок на всю высоту вместо fixed. */
+  /** Правая панель раскладки мака: обычный блок на всю высоту вместо fixed. */
   embedded?: boolean
 }) {
   const task = useLive(() => db.tasks.get(taskId), [taskId])
@@ -131,7 +131,7 @@ export function TaskCardSheet({
   const hanging = daysHanging(task, today)
 
   // На живой карточке приглушённые плашки — 20% цвета текста поверх заливки
-  // (в макете rgba поверх цвета); на серой/выполненной — обычные поверхности.
+  // на серой/выполненной — обычные поверхности.
   const mix20 = `color-mix(in srgb, ${color} 20%, transparent)`
   const rowBorder = live ? `1px solid ${mix20}` : '1px solid var(--line)'
   const chipBg = live ? mix20 : 'var(--surface2)'
@@ -171,7 +171,7 @@ export function TaskCardSheet({
   }
 
   // «Эту и все следующие»: перенос расписания — шаблон с теми же полями,
-  // но серия стартует с нового дня (ТЗ §5.9).
+  // но серия стартует с нового дня.
   const moveFollowing = () => {
     const day = pendingMove
     if (day === null || !template) return

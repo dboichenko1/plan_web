@@ -1,4 +1,4 @@
-// Повторяющиеся задачи (ТЗ §5.9): шаблон в task_templates, повторения —
+// Повторяющиеся задачи: шаблон в task_templates, повторения —
 // отдельные строки tasks с template_id и occurrence_on. Локальная материализация
 // закрывает окно today+60 сразу, ночной pg_cron делает то же на сервере;
 // уникальный индекс (template_id, occurrence_on) защищает от дублей.
@@ -12,7 +12,7 @@ import { moveTaskToDay, softDeleteTask, updateTask } from './repo'
 import { pokeSync } from './syncSignal'
 import { WEEKDAYS_SHORT, plural } from '../ui/format'
 
-/** Окно материализации вперёд, в днях (ТЗ §5.9). */
+/** Окно материализации вперёд, в днях. */
 const HORIZON_DAYS = 60
 
 function nowIso(): string {
@@ -150,7 +150,7 @@ export async function materializeTemplate(templateId: string, today: DateStr): P
       deleted_at: null,
     }
     await db.tasks.put(task)
-    // Кладём в день через repo: order_index — по естественному порядку (ТЗ §5.7).
+    // Кладём в день через repo: order_index — по естественному порядку.
     await moveTaskToDay(task.id, day, today)
   }
   await db.task_templates.update(templateId, { materialized_through: to, updated_at: nowIso() })
@@ -164,7 +164,7 @@ export async function editOnlyThis(taskId: string, patch: Partial<TaskRow>): Pro
 }
 
 /**
- * «Эту и все следующие» (ТЗ §5.9): старый шаблон обрезается накануне этого
+ * «Эту и все следующие»: старый шаблон обрезается накануне этого
  * повторения, его будущие невыполненные экземпляры мягко удаляются, вместо них
  * создаётся и материализуется новый шаблон.
  */

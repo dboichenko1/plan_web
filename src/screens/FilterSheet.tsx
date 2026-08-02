@@ -1,4 +1,4 @@
-// Шторка фильтров (макет 13). Контролируемая: каждый тумблер сразу зовёт
+// Шторка фильтров. Контролируемая: каждый тумблер сразу зовёт
 // onChange, вызывающий пересчитывает candidateCount через applyFilter —
 // шторка только показывает живое число в кнопке «Показать N задач».
 
@@ -18,7 +18,7 @@ const STATE_LABEL: Record<FilterTaskState, string> = {
   done: 'выполненные',
 }
 
-// Порядок ряда — из макета: от «горит» к «когда-нибудь».
+// Порядок ряда: от «горит» к «когда-нибудь».
 const URGENCY_ORDER: readonly Urgency[] = [4, 3, 2, 1]
 const URGENCY_LABEL: Record<Urgency, string> = {
   1: 'когда-нибудь',
@@ -86,7 +86,7 @@ export function FilterSheet({
   const visibleCategories = (categories ?? []).filter(
     (c) => c.user_id === userId && !c.archived_at,
   )
-  // Теги — по убыванию использования, как в макете; при равенстве — по алфавиту.
+  // Теги — по убыванию использования; при равенстве — по алфавиту.
   const userTags = (tags ?? [])
     .filter((t) => t.user_id === userId)
     .sort((a, b) => {

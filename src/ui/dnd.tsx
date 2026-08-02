@@ -1,6 +1,6 @@
 // Перетаскивание: dnd-kit c PointerSensor и задержкой 200 мс — она отделяет
 // перетаскивание от скролла, HTML5 drag-and-drop в Safari на iOS не работает
-// (ТЗ §8). touch-action: none ставится только на плитки, не на контейнер.
+//. touch-action: none ставится только на плитки, не на контейнер.
 
 import { PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { TaskRow } from '../data/contract'

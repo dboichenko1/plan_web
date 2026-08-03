@@ -52,13 +52,23 @@ export function LoginScreen() {
   // Вход по коду из письма: на iPhone ссылка открывается в Safari, а у
   // приложения с домашнего экрана хранилище своё — код решает это.
   async function verifyCode() {
-    if (!supabase || code.trim().length < 6) return
+    if (!supabase) return
+    const value = code.trim()
+    if (value.length < 6) return
     setCodeState('checking')
-    const { error: err } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: 'email',
-    })
+    // Поле принимает и ссылку из письма, и код (код приходит только со своим SMTP).
+    let err = null
+    if (value.startsWith('http')) {
+      try {
+        const url = new URL(value)
+        const tokenHash = url.searchParams.get('token') ?? ''
+        err = (await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' })).error
+      } catch {
+        err = new Error('bad url')
+      }
+    } else {
+      err = (await supabase.auth.verifyOtp({ email: email.trim(), token: value, type: 'email' })).error
+    }
     if (err) setCodeState('error')
     // при успехе сессию подхватит onAuthStateChange — экран сменится сам
   }
@@ -92,7 +102,7 @@ export function LoginScreen() {
           </p>
           <div className="mt-5 flex max-w-[320px] flex-col gap-1.5 text-13 text-text-quiet">
             <p>1. Введи почту и нажми кнопку — пароль не нужен.</p>
-            <p>2. Открой письмо на этом же устройстве и перейди по ссылке. С телефона удобнее ввести код из письма.</p>
+            <p>2. Открой письмо на этом же устройстве и перейди по ссылке. В приложении на телефоне — скопируй адрес ссылки из письма и вставь его на этом экране.</p>
             <p>3. На iPhone добавь страницу на экран «Домой» (Поделиться → На экран «Домой») — тогда будут работать уведомления.</p>
             <p>4. Дальше всё жестами: смахни плитку вправо — сделано, подержи — перетащи, тапни — подробности.</p>
           </div>
@@ -106,8 +116,9 @@ export function LoginScreen() {
           ) : state === 'sent' ? (
             <div className="flex flex-col gap-2">
               <p className="text-15 text-text">
-                Письмо ушло на {email.trim()}. Откройте ссылку на этом устройстве —
-                или введите код из письма:
+                Письмо ушло на {email.trim()}. Откройте ссылку на этом устройстве.
+                В установленном приложении: скопируйте адрес ссылки из письма,
+                не открывая её, и вставьте сюда:
               </p>
               <div className="flex gap-1">
                 <input
@@ -115,7 +126,7 @@ export function LoginScreen() {
                   autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="Код из письма"
+                  placeholder="Ссылка или код из письма"
                   className="h-12 min-w-0 flex-1 rounded-tile border border-line bg-surface px-3.5 font-mono text-15 text-text placeholder:font-ui placeholder:text-text-quiet focus:border-accent focus:outline-none"
                 />
                 <button
@@ -129,7 +140,7 @@ export function LoginScreen() {
               </div>
               {codeState === 'error' && (
                 <p className="text-11 text-text-quiet">
-                  Код не подошёл. Проверьте цифры или запросите новое письмо.
+                  Не подошло. Ссылка одноразовая: если её уже открывали — запросите новое письмо.
                 </p>
               )}
             </div>
@@ -161,13 +172,13 @@ export function LoginScreen() {
                   if (email.trim()) {
                     setState('sent')
                   } else {
-                    setError('Сначала впишите почту — код работает в паре с адресом.')
+                    setError('Сначала впишите почту.')
                     setState('error')
                   }
                 }}
                 className="flex h-11 w-full items-center justify-center rounded-tile bg-surface text-15 text-accent"
               >
-                Есть код из письма? Ввести код
+                Есть письмо? Вставить ссылку или код
               </button>
             </>
           )}

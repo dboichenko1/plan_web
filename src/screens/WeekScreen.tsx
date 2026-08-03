@@ -18,6 +18,7 @@ import { Board, useCellSize, type BoardItem } from '../ui/Board'
 import { tileFill, tileTextColor, type TileData } from '../ui/Tile'
 import { dateShort, weekdayShort } from '../ui/format'
 import { CategoryIcon, IconChevronLeft, IconChevronRight, IconMosaic, IconRange, IconSettings } from '../ui/icons'
+import { useSwipeNav } from '../ui/useSwipeNav'
 
 /** Зазор между мини-плитками — по дизайну px, вдвое меньше зазора борда дня. */
 const MINI_GAP = 2
@@ -117,6 +118,7 @@ export function WeekScreen({
   }, [tasks, today, catMap, onOpenDay])
   const currentMonday = addDays(today, -(isoWeekday(today) - 1))
   const capacity = profile?.day_capacity ?? 32
+  const swipe = useSwipeNav(() => onWeekChange(addDays(weekStart, -7)), () => onWeekChange(addDays(weekStart, 7)))
 
   return (
     <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -167,7 +169,12 @@ export function WeekScreen({
         </div>
       </header>
 
-      <div ref={ref} className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      <div
+        ref={ref}
+        className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
+        onPointerDown={swipe.onPointerDown}
+        onPointerUp={swipe.onPointerUp}
+      >
         {mode === 'canvas' ? (
           <div className="pt-2.5">
             <Board items={canvasItems} cell={cell} animate={false} />

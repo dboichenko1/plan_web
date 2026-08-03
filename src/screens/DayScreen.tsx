@@ -28,6 +28,7 @@ import { toTileData } from '../ui/taskTile'
 import { dateLong, weekdayName } from '../ui/format'
 import { parseSlotId, slotId, useBoardSensors, type DragData } from '../ui/dnd'
 import { IconChevronDown, IconChevronLeft, IconChevronRight, IconInbox, IconSettings } from '../ui/icons'
+import { useSwipeNav } from '../ui/useSwipeNav'
 import { HangingPanel } from './HangingPanel'
 import { InboxScreen } from './InboxScreen'
 
@@ -178,6 +179,8 @@ export function DayScreen({
     (a, b) => effectiveUrgency(b, today) - effectiveUrgency(a, today),
   )
 
+  const swipe = useSwipeNav(() => onDayChange(addDays(day, -1)), () => onDayChange(addDays(day, 1)))
+
   const overlaySize = dragging
     ? {
         width: TILE[dragging.task.importance].w * cell + (TILE[dragging.task.importance].w - 1) * GAP,
@@ -196,7 +199,11 @@ export function DayScreen({
       onDragCancel={reset}
     >
       <div className="relative flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <header className="shrink-0 px-3 pt-1.5">
+        <header
+          className="shrink-0 px-3 pt-1.5"
+          onPointerDown={swipe.onPointerDown}
+          onPointerUp={swipe.onPointerUp}
+        >
           <div className="flex items-start justify-between">
             <div>
               <h1 className="font-tile text-24 font-semibold leading-[1.1] text-text">

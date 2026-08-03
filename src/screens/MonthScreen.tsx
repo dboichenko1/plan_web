@@ -17,6 +17,7 @@ import { Tile, tileFill } from '../ui/Tile'
 import { WEEKDAYS_SHORT, dateLong } from '../ui/format'
 import { toTileData } from '../ui/taskTile'
 import { IconChevronLeft, IconChevronRight, IconMosaic, IconSettings } from '../ui/icons'
+import { useSwipeNav } from '../ui/useSwipeNav'
 
 const MONTHS_NOM = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -99,6 +100,7 @@ export function MonthScreen({
   const { ref, cell, width } = useCellSize(7)
   const cellH = Math.round(cell * 1.1)
   const [mode, setMode] = useState<'grid' | 'canvas'>('grid')
+  const swipe = useSwipeNav(() => onMonthChange(addMonths(month, -1)), () => onMonthChange(addMonths(month, 1)))
   const categories = useLive(() => db.categories.toArray(), [userId])
   const catMap = useMemo(
     () => new Map<string, CategoryRow>((categories ?? []).map((c) => [c.id, c])),
@@ -176,7 +178,11 @@ export function MonthScreen({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
+        onPointerDown={swipe.onPointerDown}
+        onPointerUp={swipe.onPointerUp}
+      >
         <div ref={ref} className="pt-3.5">
           <div style={{ width, margin: '0 auto' }}>
             {mode === 'canvas' ? (

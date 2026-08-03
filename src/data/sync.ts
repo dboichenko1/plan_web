@@ -382,13 +382,30 @@ export function startSync(userId: string): () => void {
   })
   const onOnline = () => {
     void pushOutbox()
+    void pullSince(userId)
+  }
+  const catchUp = () => {
+    // Приём и отправка при любом возвращении внимания к приложению.
+    void pullSince(userId)
+    void pushOutbox()
   }
   const onVisible = () => {
-    // возврат из фона: приём, после него отправка
-    if (document.visibilityState === 'visible') void pullSince(userId)
+    if (document.visibilityState === 'visible') catchUp()
   }
-  if (typeof window !== 'undefined') window.addEventListener('online', onOnline)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', onOnline)
+    window.addEventListener('focus', catchUp)
+  }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible)
+
+  // Страховка поверх Realtime: пока приложение открыто и на виду, тихо
+  // подтягиваем изменения каждые 25 секунд. На iOS в фоне PWA заморожен и
+  // Realtime-событие может не дойти — периодический приём это закрывает.
+  const poll = setInterval(() => {
+    if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+      void pullSince(userId)
+    }
+  }, 25_000)
 
   const channel = client.channel(`planner-sync-${userId}`)
   // у profiles нет user_id — ключ и есть id пользователя
@@ -420,7 +437,11 @@ export function startSync(userId: string): () => void {
   return () => {
     running = false
     offPoke()
-    if (typeof window !== 'undefined') window.removeEventListener('online', onOnline)
+    clearInterval(poll)
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('focus', catchUp)
+    }
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible)
     if (retryTimer !== null) {
       clearTimeout(retryTimer)

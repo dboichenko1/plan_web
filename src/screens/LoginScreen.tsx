@@ -101,10 +101,9 @@ export function LoginScreen() {
             срочные краснее.
           </p>
           <div className="mt-5 flex max-w-[320px] flex-col gap-1.5 text-13 text-text-quiet">
-            <p>1. Введи почту и нажми кнопку — пароль не нужен.</p>
-            <p>2. Открой письмо на этом же устройстве и перейди по ссылке. В приложении на телефоне — скопируй адрес ссылки из письма и вставь его на этом экране.</p>
-            <p>3. На iPhone добавь страницу на экран «Домой» (Поделиться → На экран «Домой») — тогда будут работать уведомления.</p>
-            <p>4. Дальше всё жестами: смахни плитку вправо — сделано, подержи — перетащи, тапни — подробности.</p>
+            <p>1. Введи почту — пришлём ссылку, пароль не нужен.</p>
+            <p>2. Открой письмо на этом же устройстве и перейди по ссылке. Всё.</p>
+            <p>3. На iPhone сначала добавь страницу на экран «Домой»: Поделиться → «На экран "Домой"».</p>
           </div>
         </div>
         <form className="mt-auto flex flex-col gap-2" onSubmit={submit}>
@@ -116,9 +115,9 @@ export function LoginScreen() {
           ) : state === 'sent' ? (
             <div className="flex flex-col gap-2">
               <p className="text-15 text-text">
-                Письмо ушло на {email.trim()}. Откройте ссылку на этом устройстве.
-                В установленном приложении: скопируйте адрес ссылки из письма,
-                не открывая её, и вставьте сюда:
+                Письмо ушло на {email.trim()}. Перейдите по ссылке из него — и вы внутри.
+                Ссылка не открывается в приложении? Скопируйте её адрес из письма
+                (не открывая) и вставьте сюда:
               </p>
               <div className="flex gap-1">
                 <input
@@ -166,20 +165,6 @@ export function LoginScreen() {
               <p className="mt-1 text-11 text-text-quiet">
                 {state === 'error' ? error : 'Пришлём ссылку — пароль не нужен'}
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (email.trim()) {
-                    setState('sent')
-                  } else {
-                    setError('Сначала впишите почту.')
-                    setState('error')
-                  }
-                }}
-                className="flex h-11 w-full items-center justify-center rounded-tile bg-surface text-15 text-accent"
-              >
-                Есть письмо? Вставить ссылку или код
-              </button>
             </>
           )}
         </form>

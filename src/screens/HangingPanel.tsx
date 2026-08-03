@@ -135,7 +135,9 @@ export function HangingPanel({
           }}
         />
       </div>
-      <Board items={items} cell={cell} />
+      <div className="overflow-y-auto" style={{ maxHeight: '45dvh' }}>
+        <Board items={items} cell={cell} />
+      </div>
     </div>
   )
 }

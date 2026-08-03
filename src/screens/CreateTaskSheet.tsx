@@ -15,7 +15,7 @@ import type { Rule } from '../domain/recurrence'
 import type { DateStr, Importance, Urgency } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { Tile, type TileData } from '../ui/Tile'
-import { DateField } from '../ui/DateField'
+import { DateField, TimeField } from '../ui/DateField'
 import { CategoryIcon, IconChevronRight, IconClose, IconPlus } from '../ui/icons'
 import { dateShort, plural, tileCaption, weekdayShort } from '../ui/format'
 import { RepeatSheet } from './RepeatSheet'
@@ -80,9 +80,12 @@ export function CreateTaskSheet({
   const [note, setNote] = useState('')
   const [importance, setImportance] = useState<Importance>(2)
   const [urgencyManual, setUrgencyManual] = useState<Urgency>(2)
-  const [dueOn, setDueOn] = useState('') // '' — срок не задан
+  // Одна дата — день задачи (scheduled_on). Срок (due_on) появляется из неё,
+  // только когда задано время: тогда цвет считается от даты и работает
+  // напоминание. Без времени — просто день, цвет по ручной срочности.
   const [dueTime, setDueTime] = useState('')
   const [scheduledOn, setScheduledOn] = useState<DateStr | null>(defaultDay)
+  const dueOn = scheduledOn && dueTime ? scheduledOn : ''
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [remind, setRemind] = useState<number[]>([])
   const [tagIds, setTagIds] = useState<string[]>([])
@@ -109,9 +112,8 @@ export function CreateTaskSheet({
       setNote(editing.note ?? '')
       setImportance(editing.importance)
       setUrgencyManual(editing.urgency_manual)
-      setDueOn(editing.due_on ?? '')
       setDueTime(editing.due_time ? editing.due_time.slice(0, 5) : '')
-      setScheduledOn(editing.scheduled_on)
+      setScheduledOn(editing.scheduled_on ?? editing.due_on ?? null)
       setCategoryId(editing.category_id)
       setRemind(editing.remind_before ?? [])
       void db.task_tags
@@ -124,7 +126,6 @@ export function CreateTaskSheet({
       setNote('')
       setImportance(2)
       setUrgencyManual(2)
-      setDueOn('')
       setDueTime('')
       setScheduledOn(defaultDay)
       setCategoryId(null)
@@ -163,13 +164,13 @@ export function CreateTaskSheet({
     repeating: repeat !== null,
   }
 
-  const scheduledCaption =
+  const dayCaption =
     scheduledOn === null
-      ? 'без дня'
+      ? 'без даты'
       : scheduledOn === today
-        ? 'в план на сегодня'
+        ? 'сегодня'
         : scheduledOn === addDays(today, 1)
-          ? 'в план на завтра'
+          ? 'завтра'
           : null
 
   const remindSorted = [...remind].sort((a, b) => a - b)
@@ -364,51 +365,31 @@ export function CreateTaskSheet({
 
             <div className="flex shrink-0 flex-col">
               <div className="flex h-[42px] items-center justify-between border-b border-line">
-                <span className="text-15 text-text">Дата и время</span>
+                <span className="text-15 text-text">Когда</span>
                 <span className="flex items-center gap-1">
-                  <DateField
-                    value={dueOn}
-                    onChange={setDueOn}
-                    placeholder="дата"
-                    className={CHIP_INPUT + ' text-13'}
-                  />
-                  <input
-                    type="time"
-                    aria-label="Время срока"
-                    value={dueTime}
-                    onChange={(e) => setDueTime(e.target.value)}
-                    className={CHIP_INPUT}
-                  />
-                  {dueSet && (
-                    <button
-                      type="button"
-                      aria-label="Убрать срок"
-                      onClick={() => setDueOn('')}
-                      className="flex h-[30px] w-[30px] items-center justify-center rounded-tile bg-surface2 text-text-quiet"
-                    >
-                      <IconClose size={11} />
-                    </button>
-                  )}
-                </span>
-              </div>
-
-              <div className="flex h-[42px] items-center justify-between border-b border-line">
-                <span className="text-15 text-text">В план на день</span>
-                <span className="flex items-center gap-1">
-                  {scheduledCaption && (
-                    <span className="mr-1 text-13 text-text-quiet">{scheduledCaption}</span>
+                  {dayCaption && !dueTime && (
+                    <span className="mr-1 text-13 text-text-quiet">{dayCaption}</span>
                   )}
                   <DateField
                     value={scheduledOn ?? ''}
                     onChange={(v) => setScheduledOn(v || null)}
-                    placeholder="день"
+                    placeholder="дата"
                     className={CHIP_INPUT + ' text-13'}
                   />
-                  {scheduledOn !== null && (
+                  <TimeField
+                    value={dueTime}
+                    onChange={setDueTime}
+                    placeholder="время"
+                    className={CHIP_INPUT + ' text-13'}
+                  />
+                  {(scheduledOn !== null || dueTime !== '') && (
                     <button
                       type="button"
-                      aria-label="Убрать из плана"
-                      onClick={() => setScheduledOn(null)}
+                      aria-label="Убрать дату"
+                      onClick={() => {
+                        setScheduledOn(null)
+                        setDueTime('')
+                      }}
                       className="flex h-[30px] w-[30px] items-center justify-center rounded-tile bg-surface2 text-text-quiet"
                     >
                       <IconClose size={11} />

@@ -27,7 +27,9 @@ export function HangingPanel({
   onCollapse: () => void
   onOpenTask: (id: string) => void
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Ctrl/Cmd+клик добирает в выделение — разбирать пачками быстрее.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const selectedId = selected.size === 1 ? [...selected][0]! : null
   const [wipeArmed, setWipeArmed] = useState(false)
   const dateInput = useRef<HTMLInputElement>(null)
 
@@ -46,10 +48,17 @@ export function HangingPanel({
         type="button"
         className="block h-full w-full text-left"
         style={{
-          opacity: selectedId && selectedId !== t.id ? 0.55 : 1,
+          opacity: selected.size > 0 && !selected.has(t.id) ? 0.55 : 1,
           transition: 'opacity 150ms ease',
         }}
-        onClick={() => setSelectedId(selectedId === t.id ? null : t.id)}
+        onClick={(e) => {
+          setSelected((prev) => {
+            const next = new Set(e.ctrlKey || e.metaKey ? prev : [])
+            if (prev.has(t.id) && (e.ctrlKey || e.metaKey || prev.size === 1)) next.delete(t.id)
+            else next.add(t.id)
+            return next
+          })
+        }}
       >
         <Tile tile={toTileData(t, today, catMap)} style={{ height: '100%' }} />
       </button>
@@ -57,9 +66,8 @@ export function HangingPanel({
   }))
 
   const act = async (fn: (id: string) => Promise<void>) => {
-    if (!selectedId) return
-    await fn(selectedId)
-    setSelectedId(null)
+    for (const id of selected) await fn(id)
+    setSelected(new Set())
   }
 
   return (
@@ -83,26 +91,30 @@ export function HangingPanel({
           onClick={() => {
             if (selectedId) {
               onOpenTask(selectedId)
-              setSelectedId(null)
+              setSelected(new Set())
             }
           }}
         >
           Открыть
         </Chip>
         <Chip
-          disabled={!selectedId}
+          disabled={selected.size === 0}
           onClick={() => act((id) => moveTaskToDay(id, today, today))}
         >
           В сегодня
         </Chip>
-        <Chip disabled={!selectedId} onClick={() => dateInput.current?.showPicker()}>
+        <Chip disabled={selected.size === 0} onClick={() => dateInput.current?.showPicker()}>
           На дату
         </Chip>
-        <Chip muted disabled={!selectedId} onClick={() => act((id) => softDeleteTask(id))}>
+        <Chip muted disabled={selected.size === 0} onClick={() => act((id) => softDeleteTask(id))}>
           Удалить
         </Chip>
         <span className="ml-1 self-center font-mono text-[10px] text-text-quiet">
-          {selectedId ? 'действия по выбранной' : 'выберите плитку'}
+          {selected.size > 1
+            ? `выбрано ${selected.size} · ctrl+клик добирает`
+            : selected.size === 1
+              ? 'действия по выбранной · ctrl+клик добирает'
+              : 'выберите плитку'}
         </span>
         <button
           type="button"

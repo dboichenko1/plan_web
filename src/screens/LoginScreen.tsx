@@ -153,9 +153,10 @@ export function LoginScreen() {
                 onClick={() => {
                   if (email.trim()) setState('sent')
                 }}
-                className="self-start text-13 text-accent"
+                disabled={!email.trim()}
+                className="flex h-11 w-full items-center justify-center rounded-tile bg-surface text-15 text-accent disabled:opacity-50"
               >
-                Есть код из письма?
+                Есть код из письма? Ввести код
               </button>
             </>
           )}

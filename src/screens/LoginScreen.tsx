@@ -151,10 +151,14 @@ export function LoginScreen() {
               <button
                 type="button"
                 onClick={() => {
-                  if (email.trim()) setState('sent')
+                  if (email.trim()) {
+                    setState('sent')
+                  } else {
+                    setError('Сначала впишите почту — код работает в паре с адресом.')
+                    setState('error')
+                  }
                 }}
-                disabled={!email.trim()}
-                className="flex h-11 w-full items-center justify-center rounded-tile bg-surface text-15 text-accent disabled:opacity-50"
+                className="flex h-11 w-full items-center justify-center rounded-tile bg-surface text-15 text-accent"
               >
                 Есть код из письма? Ввести код
               </button>

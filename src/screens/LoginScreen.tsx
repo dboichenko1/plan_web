@@ -86,9 +86,16 @@ export function LoginScreen() {
       >
         <div className="mt-[150px]">
           <h1 className="font-tile text-32 font-semibold leading-[1.1] text-text">Планировщик</h1>
-          <p className="mt-2.5 max-w-[300px] text-15 text-text-muted">
-            День — это не список, а картина. Чем важнее задача, тем больше её плитка.
+          <p className="mt-2.5 max-w-[320px] text-15 text-text-muted">
+            Простой планировщик на каждый день. Дела — плитки: важные крупнее,
+            срочные краснее.
           </p>
+          <div className="mt-5 flex max-w-[320px] flex-col gap-1.5 text-13 text-text-quiet">
+            <p>1. Введи почту и нажми кнопку — пароль не нужен.</p>
+            <p>2. Открой письмо на этом же устройстве и перейди по ссылке. С телефона удобнее ввести код из письма.</p>
+            <p>3. На iPhone добавь страницу на экран «Домой» (Поделиться → На экран «Домой») — тогда будут работать уведомления.</p>
+            <p>4. Дальше всё жестами: смахни плитку вправо — сделано, подержи — перетащи, тапни — подробности.</p>
+          </div>
         </div>
         <form className="mt-auto flex flex-col gap-2" onSubmit={submit}>
           {!supabaseConfigured ? (

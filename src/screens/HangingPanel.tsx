@@ -31,6 +31,10 @@ export function HangingPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const selectedId = selected.size === 1 ? [...selected][0]! : null
   const [wipeArmed, setWipeArmed] = useState(false)
+  const [similarArmed, setSimilarArmed] = useState(false)
+  // «Похожие» — просроченные с теми же названиями, что у выделенных.
+  const similarTitles = new Set([...selected].map((id) => tasks.find((t) => t.id === id)?.title).filter(Boolean))
+  const similar = tasks.filter((t) => similarTitles.has(t.title))
   const dateInput = useRef<HTMLInputElement>(null)
 
   const ordered = [...tasks].sort((a, b) =>
@@ -108,6 +112,22 @@ export function HangingPanel({
         </Chip>
         <Chip muted disabled={selected.size === 0} onClick={() => act((id) => softDeleteTask(id))}>
           Удалить
+        </Chip>
+        <Chip
+          muted
+          disabled={selected.size === 0}
+          onClick={() => {
+            if (!similarArmed) {
+              setSimilarArmed(true)
+              setTimeout(() => setSimilarArmed(false), 3000)
+              return
+            }
+            setSimilarArmed(false)
+            for (const t of similar) void softDeleteTask(t.id)
+            setSelected(new Set())
+          }}
+        >
+          {similarArmed ? `Точно удалить ${similar.length} похожих` : 'Удалить похожие'}
         </Chip>
         <span className="ml-1 self-center font-mono text-[10px] text-text-quiet">
           {selected.size > 1

@@ -18,12 +18,14 @@ export function HangingPanel({
   cell,
   catMap,
   onCollapse,
+  onOpenTask,
 }: {
   tasks: TaskRow[]
   today: DateStr
   cell: number
   catMap: ReadonlyMap<string, CategoryRow>
   onCollapse: () => void
+  onOpenTask: (id: string) => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [wipeArmed, setWipeArmed] = useState(false)
@@ -75,8 +77,18 @@ export function HangingPanel({
           Свернуть
         </button>
       </div>
-      <Board items={items} cell={cell} />
-      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+      <div className="mb-1.5 flex flex-wrap items-center gap-1">
+        <Chip
+          disabled={!selectedId}
+          onClick={() => {
+            if (selectedId) {
+              onOpenTask(selectedId)
+              setSelectedId(null)
+            }
+          }}
+        >
+          Открыть
+        </Chip>
         <Chip
           disabled={!selectedId}
           onClick={() => act((id) => moveTaskToDay(id, today, today))}
@@ -123,6 +135,7 @@ export function HangingPanel({
           }}
         />
       </div>
+      <Board items={items} cell={cell} />
     </div>
   )
 }

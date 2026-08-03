@@ -267,7 +267,7 @@ export function DayScreen({
           )}
 
           {day === today && hangingOpen && hanging.length > 0 && (
-            <HangingPanel tasks={hanging} today={today} cell={cell} catMap={catMap} onCollapse={onToggleHanging} />
+            <HangingPanel tasks={hanging} today={today} cell={cell} catMap={catMap} onCollapse={onToggleHanging} onOpenTask={onOpenTask} />
           )}
 
           <div className="mt-2.5">

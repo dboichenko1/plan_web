@@ -17,7 +17,7 @@ import type { DateStr } from '../domain/types'
 import { Board, useCellSize, type BoardItem } from '../ui/Board'
 import { tileFill, tileTextColor, type TileData } from '../ui/Tile'
 import { dateShort, weekdayShort } from '../ui/format'
-import { CategoryIcon, IconChevronLeft, IconChevronRight } from '../ui/icons'
+import { CategoryIcon, IconChevronLeft, IconChevronRight, IconMosaic, IconRange, IconSettings } from '../ui/icons'
 
 /** Зазор между мини-плитками — по дизайну px, вдвое меньше зазора борда дня. */
 const MINI_GAP = 2
@@ -29,6 +29,7 @@ export function WeekScreen({
   onWeekChange,
   onOpenDay,
   onOpenPeriod,
+  onOpenSettings,
 }: {
   userId: string
   today: DateStr
@@ -36,6 +37,7 @@ export function WeekScreen({
   onWeekChange: (monday: DateStr) => void
   onOpenDay: (day: DateStr) => void
   onOpenPeriod?: () => void
+  onOpenSettings?: () => void
 }) {
   const weekEnd = addDays(weekStart, 6)
 
@@ -129,27 +131,23 @@ export function WeekScreen({
             </div>
           </div>
           <div className="flex gap-1">
-            <button
-              type="button"
+            <HeaderButton
+              label={mode === 'days' ? 'Полотно недели' : 'По дням'}
+              active={mode === 'canvas'}
               onClick={() => setMode(mode === 'days' ? 'canvas' : 'days')}
-              className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
             >
-              {mode === 'days' ? 'полотно' : 'по дням'}
-            </button>
+              <IconMosaic size={15} />
+            </HeaderButton>
             {onOpenPeriod && (
-              <button
-                type="button"
-                onClick={onOpenPeriod}
-                className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
-              >
-                период
-              </button>
+              <HeaderButton label="Произвольный период" onClick={onOpenPeriod}>
+                <IconRange size={15} />
+              </HeaderButton>
             )}
             {weekStart !== currentMonday && (
               <button
                 type="button"
                 onClick={() => onWeekChange(currentMonday)}
-                className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
+                className="flex h-[34px] items-center rounded-tile bg-surface px-2.5 text-13 text-text-muted"
               >
                 сегодня
               </button>
@@ -160,6 +158,11 @@ export function WeekScreen({
             <HeaderButton label="Следующая неделя" onClick={() => onWeekChange(addDays(weekStart, 7))}>
               <IconChevronRight size={15} />
             </HeaderButton>
+            {onOpenSettings && (
+              <HeaderButton label="Настройки" onClick={onOpenSettings}>
+                <IconSettings size={15} />
+              </HeaderButton>
+            )}
           </div>
         </div>
       </header>
@@ -382,17 +385,24 @@ function HeaderButton({
   label,
   onClick,
   children,
+  active = false,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
+  active?: boolean
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-[34px] w-[34px] items-center justify-center rounded-tile bg-surface text-text-muted"
+      className="flex h-[34px] w-[34px] items-center justify-center rounded-tile"
+      style={
+        active
+          ? { background: 'var(--text)', color: 'var(--bg)' }
+          : { background: 'var(--surface)', color: 'var(--text-muted)' }
+      }
     >
       {children}
     </button>

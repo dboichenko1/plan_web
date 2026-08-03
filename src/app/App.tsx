@@ -63,6 +63,8 @@ function Shell({ userId }: { userId: string }) {
   const [tab, setTab] = useState<Tab>('day')
   const [createOpen, setCreateOpen] = useState(false)
   const [openTaskId, setOpenTaskId] = useState<string | null>(null)
+  const [editTaskId, setEditTaskId] = useState<string | null>(null)
+  const editTask = useLive(() => (editTaskId ? db.tasks.get(editTaskId) : Promise.resolve(undefined)), [editTaskId])
   const [inboxOpen, setInboxOpen] = useState(false)
   const [hangingOpen, setHangingOpen] = useState(false)
   const [periodOpen, setPeriodOpen] = useState(false)
@@ -92,6 +94,7 @@ function Shell({ userId }: { userId: string }) {
     setPeriodOpen(false)
     setTab('day')
   }
+  const openSettings = () => setSettingsView('settings')
 
   const content = (() => {
     if (!seeded) return null
@@ -108,7 +111,8 @@ function Shell({ userId }: { userId: string }) {
       return <NotificationsSettings userId={userId} onBack={() => setSettingsView('settings')} />
     if (settingsView === 'theme')
       return <ThemeScreen userId={userId} onBack={() => setSettingsView('settings')} />
-    if (periodOpen) return <PeriodScreen userId={userId} today={today} onOpenDay={openDay} />
+    if (periodOpen)
+      return <PeriodScreen userId={userId} today={today} onOpenDay={openDay} onOpenSettings={openSettings} />
     switch (tab) {
       case 'day':
         return (
@@ -123,6 +127,7 @@ function Shell({ userId }: { userId: string }) {
             onToggleInbox={() => setInboxOpen((v) => !v)}
             hangingOpen={hangingOpen}
             onToggleHanging={() => setHangingOpen((v) => !v)}
+            onOpenSettings={openSettings}
           />
         )
       case 'week':
@@ -134,6 +139,7 @@ function Shell({ userId }: { userId: string }) {
             onWeekChange={setWeekStart}
             onOpenDay={openDay}
             onOpenPeriod={() => setPeriodOpen(true)}
+            onOpenSettings={openSettings}
           />
         )
       case 'month':
@@ -144,6 +150,7 @@ function Shell({ userId }: { userId: string }) {
             month={month}
             onMonthChange={setMonth}
             onOpenDay={openDay}
+            onOpenSettings={openSettings}
           />
         )
       case 'stats':
@@ -177,8 +184,24 @@ function Shell({ userId }: { userId: string }) {
         today={today}
         defaultDay={tab === 'day' ? day : today}
       />
+      <CreateTaskSheet
+        open={editTaskId !== null && editTask !== undefined}
+        onClose={() => setEditTaskId(null)}
+        userId={userId}
+        today={today}
+        defaultDay={today}
+        editTask={editTask ?? null}
+      />
       {openTaskId && (
-        <TaskCardSheet taskId={openTaskId} today={today} onClose={() => setOpenTaskId(null)} />
+        <TaskCardSheet
+          taskId={openTaskId}
+          today={today}
+          onClose={() => setOpenTaskId(null)}
+          onEdit={(id) => {
+            setOpenTaskId(null)
+            setEditTaskId(id)
+          }}
+        />
       )}
     </div>
   )

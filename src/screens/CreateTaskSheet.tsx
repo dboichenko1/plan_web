@@ -5,7 +5,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
-import { createTag, createTask, linkTaskTag } from '../data/repo'
+import { createTag, createTask, linkTaskTag, unlinkTaskTag, updateTask } from '../data/repo'
+import type { TaskRow } from '../data/contract'
 import { createTemplate, describeRule } from '../data/templates'
 import { TILE } from '../domain/packing'
 import { effectiveUrgency } from '../domain/urgency'
@@ -64,13 +65,17 @@ export function CreateTaskSheet({
   userId,
   today,
   defaultDay,
+  editTask,
 }: {
   open: boolean
   onClose: () => void
   userId: string
   today: DateStr
   defaultDay: DateStr
+  /** Если задана — шторка работает в режиме правки этой задачи. */
+  editTask?: TaskRow | null
 }) {
+  const editing = editTask ?? null
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   const [importance, setImportance] = useState<Importance>(2)
@@ -92,22 +97,40 @@ export function CreateTaskSheet({
   // смена дня при открытой шторке черновик не трогает.
   useEffect(() => {
     if (!open) return
-    setTitle('')
-    setNote('')
-    setImportance(2)
-    setUrgencyManual(2)
-    setDueOn('')
-    setDueTime('')
-    setScheduledOn(defaultDay)
-    setCategoryId(null)
-    setRemind([])
-    setTagIds([])
-    setRepeat(null)
     setRemindOpen(false)
     setRepeatOpen(false)
     setAddingTag(false)
     setNewTag('')
     setSaving(false)
+    setRepeat(null)
+    if (editing) {
+      // Режим правки: форма заполняется полями задачи.
+      setTitle(editing.title)
+      setNote(editing.note ?? '')
+      setImportance(editing.importance)
+      setUrgencyManual(editing.urgency_manual)
+      setDueOn(editing.due_on ?? '')
+      setDueTime(editing.due_time ? editing.due_time.slice(0, 5) : '')
+      setScheduledOn(editing.scheduled_on)
+      setCategoryId(editing.category_id)
+      setRemind(editing.remind_before ?? [])
+      void db.task_tags
+        .where('task_id')
+        .equals(editing.id)
+        .toArray()
+        .then((links) => setTagIds(links.map((l) => l.tag_id)))
+    } else {
+      setTitle('')
+      setNote('')
+      setImportance(2)
+      setUrgencyManual(2)
+      setDueOn('')
+      setDueTime('')
+      setScheduledOn(defaultDay)
+      setCategoryId(null)
+      setRemind([])
+      setTagIds([])
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -160,6 +183,27 @@ export function CreateTaskSheet({
     if (!name || saving) return
     setSaving(true)
     try {
+      if (editing) {
+        // Правка существующей задачи.
+        await updateTask(editing.id, {
+          title: name,
+          note: note.trim() ? note.trim() : null,
+          importance,
+          urgency_manual: urgencyManual,
+          due_on: dueOn || null,
+          due_time: dueTime || null,
+          remind_before: dueTime ? remindSorted : [],
+          scheduled_on: scheduledOn,
+          category_id: categoryId,
+        })
+        const existing = await db.task_tags.where('task_id').equals(editing.id).toArray()
+        const had = new Set(existing.map((l) => l.tag_id))
+        const want = new Set(tagIds)
+        for (const tagId of want) if (!had.has(tagId)) await linkTaskTag(editing.id, tagId, userId)
+        for (const tagId of had) if (!want.has(tagId)) await unlinkTaskTag(editing.id, tagId, userId)
+        onClose()
+        return
+      }
       if (repeat) {
         // Повторяющаяся задача — это шаблон: экземпляры создаёт материализация,
         // отдельную одиночную задачу не заводим. Теги к шаблону не применяются.
@@ -405,6 +449,7 @@ export function CreateTaskSheet({
                 )}
               </button>
 
+              {!editing && (
               <button
                 type="button"
                 onClick={() => setRepeatOpen(true)}
@@ -424,6 +469,7 @@ export function CreateTaskSheet({
                   <IconChevronRight size={12} className="shrink-0 text-text-quiet" />
                 </span>
               </button>
+              )}
             </div>
 
             <Section label="Категория">
@@ -526,7 +572,7 @@ export function CreateTaskSheet({
                   : { background: 'var(--surface2)', color: 'var(--text-quiet)' }
               }
             >
-              Добавить задачу
+              {editing ? 'Сохранить' : 'Добавить задачу'}
             </button>
           </div>
         </div>

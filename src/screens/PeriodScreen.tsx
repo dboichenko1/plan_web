@@ -6,6 +6,7 @@
 import { useMemo, useState } from 'react'
 import { db } from '../data/db'
 import { useLive } from '../data/hooks'
+import { IconSettings } from '../ui/icons'
 import type { TaskRow } from '../data/contract'
 import { addDays, daysBetween, daysInMonth } from '../domain/date'
 import { TILE } from '../domain/packing'
@@ -55,10 +56,12 @@ export function PeriodScreen({
   userId,
   today,
   onOpenDay,
+  onOpenSettings,
 }: {
   userId: string
   today: string
   onOpenDay: (day: string) => void
+  onOpenSettings?: () => void
 }) {
   const [range, setRange] = useState<Range>(() => lastNDays(today, 7))
 
@@ -127,7 +130,19 @@ export function PeriodScreen({
   return (
     <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <header className="shrink-0 px-3 pt-1.5">
-        <h1 className="font-tile text-24 font-semibold leading-[1.1] text-text">Период</h1>
+        <div className="flex items-start justify-between">
+          <h1 className="font-tile text-24 font-semibold leading-[1.1] text-text">Период</h1>
+          {onOpenSettings && (
+            <button
+              type="button"
+              aria-label="Настройки"
+              onClick={onOpenSettings}
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-tile bg-surface text-text-muted"
+            >
+              <IconSettings size={15} />
+            </button>
+          )}
+        </div>
 
         <div className="mt-2.5 flex gap-1">
           {presets.map((p) => {

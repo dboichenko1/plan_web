@@ -223,3 +223,25 @@ export function IconInbox(p: IconProps) {
     </Svg>
   )
 }
+
+/** Мозаика — режим «полотно». */
+export function IconMosaic(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="4" y="4" width="9" height="9" rx="0.5" />
+      <rect x="15" y="4" width="5" height="5" rx="0.5" />
+      <rect x="15" y="11" width="5" height="9" rx="0.5" />
+      <rect x="4" y="15" width="9" height="5" rx="0.5" />
+    </Svg>
+  )
+}
+
+/** Диапазон дат — «период». */
+export function IconRange(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="4" y="5.5" width="16" height="14.5" rx="1" />
+      <path d="M4 10 H20 M8.5 3.5 V7 M15.5 3.5 V7 M8 14 H16" />
+    </Svg>
+  )
+}

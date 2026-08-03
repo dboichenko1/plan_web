@@ -83,12 +83,15 @@ export function TaskCardSheet({
   onClose,
   today,
   embedded = false,
+  onEdit,
 }: {
   taskId: string
   onClose: () => void
   today: DateStr
   /** Правая панель раскладки мака: обычный блок на всю высоту вместо fixed. */
   embedded?: boolean
+  /** Открыть шторку правки этой задачи. */
+  onEdit?: (id: string) => void
 }) {
   const task = useLive(() => db.tasks.get(taskId), [taskId])
   const catId = task?.category_id ?? null
@@ -228,17 +231,29 @@ export function TaskCardSheet({
         >
           <IconClose size={20} />
         </button>
-        {st !== 'done' && (
-          <span className="mt-[7px] flex gap-[3px]">
-            {Array.from({ length: urg }, (_, i) => (
-              <span
-                key={i}
-                className="h-[5px] w-[5px]"
-                style={{ background: live ? color : `var(--u${urg})` }}
-              />
-            ))}
-          </span>
-        )}
+        <span className="flex items-center gap-2">
+          {st !== 'done' && (
+            <span className="mt-[7px] flex gap-[3px]">
+              {Array.from({ length: urg }, (_, i) => (
+                <span
+                  key={i}
+                  className="h-[5px] w-[5px]"
+                  style={{ background: live ? color : `var(--u${urg})` }}
+                />
+              ))}
+            </span>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(taskId)}
+              className="rounded-tile px-3 py-1 text-13 font-medium"
+              style={{ background: color, color: fill }}
+            >
+              Изменить
+            </button>
+          )}
+        </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

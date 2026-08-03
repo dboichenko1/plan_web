@@ -27,7 +27,7 @@ import { Tile } from '../ui/Tile'
 import { toTileData } from '../ui/taskTile'
 import { dateLong, weekdayName } from '../ui/format'
 import { parseSlotId, slotId, useBoardSensors, type DragData } from '../ui/dnd'
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconInbox } from '../ui/icons'
+import { IconChevronDown, IconChevronLeft, IconChevronRight, IconInbox, IconSettings } from '../ui/icons'
 import { HangingPanel } from './HangingPanel'
 import { InboxScreen } from './InboxScreen'
 
@@ -44,6 +44,7 @@ export function DayScreen({
   onToggleInbox,
   hangingOpen,
   onToggleHanging,
+  onOpenSettings,
   cols = 4,
 }: {
   userId: string
@@ -56,6 +57,7 @@ export function DayScreen({
   onToggleInbox: () => void
   hangingOpen: boolean
   onToggleHanging: () => void
+  onOpenSettings?: () => void
   /** Колонок на борде: 4 на телефоне, 8 в раскладке мака. Ячейка не растёт. */
   cols?: number
 }) {
@@ -210,7 +212,7 @@ export function DayScreen({
                 <button
                   type="button"
                   onClick={() => onDayChange(today)}
-                  className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
+                  className="flex h-[34px] items-center rounded-tile bg-surface px-2.5 text-13 text-text-muted"
                 >
                   сегодня
                 </button>
@@ -230,6 +232,11 @@ export function DayScreen({
               <HeaderButton label="Следующий день" onClick={() => onDayChange(addDays(day, 1))}>
                 <IconChevronRight size={15} />
               </HeaderButton>
+              {onOpenSettings && (
+                <HeaderButton label="Настройки" onClick={onOpenSettings}>
+                  <IconSettings size={15} />
+                </HeaderButton>
+              )}
             </div>
           </div>
 

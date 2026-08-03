@@ -16,7 +16,7 @@ import { Board, useCellSize, type BoardItem } from '../ui/Board'
 import { Tile, tileFill } from '../ui/Tile'
 import { WEEKDAYS_SHORT, dateLong } from '../ui/format'
 import { toTileData } from '../ui/taskTile'
-import { IconChevronLeft, IconChevronRight } from '../ui/icons'
+import { IconChevronLeft, IconChevronRight, IconMosaic, IconSettings } from '../ui/icons'
 
 const MONTHS_NOM = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -37,12 +37,14 @@ export function MonthScreen({
   month,
   onMonthChange,
   onOpenDay,
+  onOpenSettings,
 }: {
   userId: string
   today: DateStr
   month: string /* 'YYYY-MM' */
   onMonthChange: (m: string) => void
   onOpenDay: (day: DateStr) => void
+  onOpenSettings?: () => void
 }) {
   const year = Number(month.slice(0, 4))
   const monthNum = Number(month.slice(5, 7))
@@ -143,18 +145,18 @@ export function MonthScreen({
             </div>
           </div>
           <div className="flex gap-1">
-            <button
-              type="button"
+            <HeaderButton
+              label={mode === 'grid' ? 'Полотно месяца' : 'Сетка'}
+              active={mode === 'canvas'}
               onClick={() => setMode(mode === 'grid' ? 'canvas' : 'grid')}
-              className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
             >
-              {mode === 'grid' ? 'полотно' : 'сетка'}
-            </button>
+              <IconMosaic size={15} />
+            </HeaderButton>
             {month !== today.slice(0, 7) && (
               <button
                 type="button"
                 onClick={() => onMonthChange(today.slice(0, 7))}
-                className="flex h-[34px] items-center rounded-tile bg-surface px-3 text-13 text-text-muted"
+                className="flex h-[34px] items-center rounded-tile bg-surface px-2.5 text-13 text-text-muted"
               >
                 сегодня
               </button>
@@ -165,6 +167,11 @@ export function MonthScreen({
             <HeaderButton label="Следующий месяц" onClick={() => onMonthChange(addMonths(month, 1))}>
               <IconChevronRight size={15} />
             </HeaderButton>
+            {onOpenSettings && (
+              <HeaderButton label="Настройки" onClick={onOpenSettings}>
+                <IconSettings size={15} />
+              </HeaderButton>
+            )}
           </div>
         </div>
       </header>
@@ -305,17 +312,24 @@ function HeaderButton({
   label,
   onClick,
   children,
+  active = false,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
+  active?: boolean
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-[34px] w-[34px] items-center justify-center rounded-tile bg-surface text-text-muted"
+      className="flex h-[34px] w-[34px] items-center justify-center rounded-tile"
+      style={
+        active
+          ? { background: 'var(--text)', color: 'var(--bg)' }
+          : { background: 'var(--surface)', color: 'var(--text-muted)' }
+      }
     >
       {children}
     </button>

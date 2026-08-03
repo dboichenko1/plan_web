@@ -172,8 +172,8 @@ export function WeekScreen({
       <div
         ref={ref}
         className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
-        onPointerDown={swipe.onPointerDown}
-        onPointerUp={swipe.onPointerUp}
+        onTouchStart={swipe.onTouchStart}
+        onTouchEnd={swipe.onTouchEnd}
       >
         {mode === 'canvas' ? (
           <div className="pt-2.5">

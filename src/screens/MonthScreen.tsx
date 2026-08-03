@@ -180,8 +180,8 @@ export function MonthScreen({
 
       <div
         className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
-        onPointerDown={swipe.onPointerDown}
-        onPointerUp={swipe.onPointerUp}
+        onTouchStart={swipe.onTouchStart}
+        onTouchEnd={swipe.onTouchEnd}
       >
         <div ref={ref} className="pt-3.5">
           <div style={{ width, margin: '0 auto' }}>

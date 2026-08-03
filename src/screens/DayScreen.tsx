@@ -198,12 +198,13 @@ export function DayScreen({
       onDragEnd={onDragEnd}
       onDragCancel={reset}
     >
-      <div className="relative flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <header
-          className="shrink-0 px-3 pt-1.5"
-          onPointerDown={swipe.onPointerDown}
-          onPointerUp={swipe.onPointerUp}
-        >
+      <div
+        className="relative flex h-full flex-col"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        onTouchStart={swipe.onTouchStart}
+        onTouchEnd={swipe.onTouchEnd}
+      >
+        <header className="shrink-0 px-3 pt-1.5">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="font-tile text-24 font-semibold leading-[1.1] text-text">
@@ -416,7 +417,7 @@ function BoardTile({
   const canComplete = state !== 'done'
 
   return (
-    <div ref={setDropRef} className="h-full w-full">
+    <div ref={setDropRef} className="h-full w-full" data-noswipe>
       <div
         ref={setDragRef}
         {...attributes}
